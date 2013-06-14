@@ -4,52 +4,75 @@
 
 #include "circular_buffer.h"
 
-#define TEST_DATA_SIZE 100
-#define INCREMENTING_SIZE 10
-#define TEST1_SIZE 10
-static struct circular_buffer *incrementing;
-static struct circular_buffer *empty;
-static struct circular_buffer *test1;
-static struct circular_buffer *test2;
+static struct circular_buffer* incrementing_buffer(int size)
+{
+	int i;
+	char data[size];
+	struct circular_buffer *buffer = circular_buffer_create(size);
+
+	CU_ASSERT(buffer != NULL);
+
+	/* populate test data with incrementing numbers */
+	for (i = 0; i < sizeof(data); i++)
+		data[i] = i;
+
+	circular_buffer_write(buffer, data, sizeof(data));
+
+	return buffer;
+}
 
 void test_circular_buffer_full(void)
 {
+	struct circular_buffer *incrementing, *empty;
+
+	incrementing = incrementing_buffer(10);
+	empty = circular_buffer_create(20);
+
 	CU_ASSERT_TRUE(circular_buffer_full(incrementing));
 	CU_ASSERT_FALSE(circular_buffer_full(empty));
-	CU_ASSERT_FALSE(circular_buffer_full(test1));
 }
 
 void test_circular_buffer_empty(void)
 {
+	struct circular_buffer *incrementing, *empty;
+
+	incrementing = incrementing_buffer(10);
+	empty = circular_buffer_create(20);
+
 	CU_ASSERT_FALSE(circular_buffer_empty(incrementing));
 	CU_ASSERT_TRUE(circular_buffer_empty(empty));
-	CU_ASSERT_TRUE(circular_buffer_empty(test1));
 }
 
 void test_circular_buffer_starts_at(void)
 {
-	char buffer[INCREMENTING_SIZE];
-	const int read_size = 5;
+	const unsigned int SIZE = 10, READ_SIZE = 5;
+	char buffer[SIZE];
+	struct circular_buffer *incrementing, *empty;
 
-	if (INCREMENTING_SIZE < read_size)
-		CU_FAIL("Attempting to read more than buffer has.");
+	incrementing = incrementing_buffer(SIZE);
+	empty = circular_buffer_create(20);
 
 	CU_ASSERT(circular_buffer_starts_at(incrementing) == incrementing->buffer);
-	circular_buffer_read(incrementing, buffer, read_size);
-	CU_ASSERT(circular_buffer_starts_at(incrementing) == incrementing->buffer + read_size);
+	circular_buffer_read(incrementing, buffer, READ_SIZE);
+	CU_ASSERT(circular_buffer_starts_at(incrementing) == incrementing->buffer + READ_SIZE);
+
+	CU_ASSERT(circular_buffer_starts_at(empty) == empty->buffer);
+	circular_buffer_read(empty, buffer, READ_SIZE);
+	CU_ASSERT(circular_buffer_starts_at(empty) == empty->buffer);
 }
 
 void test_circular_buffer_ends_at(void)
 {
-	char buffer[INCREMENTING_SIZE];
-	char testdata[] = { 13, 77 };
-	const int read_size = 5;
+	const unsigned int SIZE = 10, READ_SIZE = 5;
+	char buffer[SIZE];
+	struct circular_buffer *incrementing, *empty;
+	char testdata[] = { 19, 84 };
 
-	if (INCREMENTING_SIZE < read_size)
-		CU_FAIL("Attempting to read more than buffer has.");
+	incrementing = incrementing_buffer(SIZE);
+	empty = circular_buffer_create(20);
 
 	CU_ASSERT(circular_buffer_ends_at(incrementing) == incrementing->buffer + incrementing->length);
-	circular_buffer_read(incrementing, buffer, read_size);
+	circular_buffer_read(incrementing, buffer, READ_SIZE);
 	CU_ASSERT(circular_buffer_ends_at(incrementing) == incrementing->buffer + incrementing->length);
 	circular_buffer_write(incrementing, testdata, sizeof(testdata));
 	/* make sure head wraps */
@@ -58,10 +81,44 @@ void test_circular_buffer_ends_at(void)
 
 void test_circular_buffer_available_data(void)
 {
+	const unsigned int SIZE = 10, READ_SIZE = 5;
+	char buffer[SIZE];
+	struct circular_buffer *incrementing, *empty;
+
+	incrementing = incrementing_buffer(SIZE);
+	empty = circular_buffer_create(20);
+
+	CU_ASSERT(circular_buffer_available_data(incrementing) == SIZE);
+	circular_buffer_read(incrementing, buffer, READ_SIZE);
+	CU_ASSERT(circular_buffer_available_data(incrementing) == SIZE - READ_SIZE);
+
+	CU_ASSERT(circular_buffer_available_data(empty) == 0);
+	circular_buffer_read(empty, buffer, READ_SIZE);
+	CU_ASSERT(circular_buffer_available_data(empty) == 0);
 }
 
 void test_circular_buffer_available_space(void)
 {
+	const unsigned int SIZE = 10, READ_SIZE = 5, WRITE_SIZE = 5;
+	char buffer[SIZE], data[SIZE];
+	struct circular_buffer *incrementing, *empty;
+	int i;
+
+	incrementing = incrementing_buffer(SIZE);
+	empty = circular_buffer_create(SIZE);
+
+	for (i = 0; i < sizeof(data); i++)
+		data[i] = i;
+
+	CU_ASSERT(circular_buffer_available_space(incrementing) == 0);
+	circular_buffer_read(incrementing, buffer, READ_SIZE);
+	CU_ASSERT(circular_buffer_available_space(incrementing) == READ_SIZE);
+
+	CU_ASSERT(circular_buffer_available_space(empty) == SIZE);
+	circular_buffer_read(empty, buffer, READ_SIZE);
+	CU_ASSERT(circular_buffer_available_space(empty) == SIZE);
+	circular_buffer_write(empty, data, WRITE_SIZE);
+	CU_ASSERT(circular_buffer_available_space(empty) == SIZE - WRITE_SIZE);
 }
 
 static CU_TestInfo tests_utilities[] = {
@@ -76,8 +133,13 @@ static CU_TestInfo tests_utilities[] = {
 
 void test_circular_buffer_read_all(void)
 {
-	char buffer[INCREMENTING_SIZE];
+	const unsigned int SIZE = 10, READ_SIZE = 5;
+	char buffer[SIZE];
+	struct circular_buffer *incrementing, *empty;
 	int i, ret;
+
+	incrementing = incrementing_buffer(SIZE);
+	empty = circular_buffer_create(20);
 
 	CU_ASSERT(circular_buffer_available_data(incrementing) == incrementing->length);
 	ret = circular_buffer_read(incrementing, buffer, sizeof(buffer));
@@ -93,8 +155,13 @@ void test_circular_buffer_read_all(void)
 
 void test_circular_buffer_read_none(void)
 {
-	char buffer[INCREMENTING_SIZE];
+	const unsigned int SIZE = 10, READ_SIZE = 5;
+	char buffer[SIZE];
+	struct circular_buffer *incrementing, *empty;
 	int ret;
+
+	incrementing = incrementing_buffer(SIZE);
+	empty = circular_buffer_create(20);
 
 	CU_ASSERT(circular_buffer_available_data(incrementing) == incrementing->length);
 	ret = circular_buffer_read(incrementing, buffer, 0);
@@ -113,21 +180,22 @@ void test_circular_buffer_read_one_at_a_time(void)
 
 void test_circular_buffer_read_too_much(void)
 {
-	char buffer[INCREMENTING_SIZE + 1];
+	const unsigned int SIZE = 10, READ_SIZE = 5;
+	char buffer[SIZE + 1];
+	struct circular_buffer *incrementing, *empty;
 	int ret;
+
+	incrementing = incrementing_buffer(SIZE);
+	empty = circular_buffer_create(20);
 
 	/*
 	 * circular_buffer_read should only return up to the amount of available data. This
 	 * means it should return at most the amount specified, but could be less if the amount
 	 * specified was more than was available.
 	 */
-	printf("\n");
-	circular_buffer_debug(incrementing);
 	CU_ASSERT(circular_buffer_available_data(incrementing) == incrementing->length);
 	ret = circular_buffer_read(incrementing, buffer, sizeof(buffer));
-	printf("returned=%d\n", ret);
-	circular_buffer_debug(incrementing);
-	CU_ASSERT(ret == INCREMENTING_SIZE);
+	CU_ASSERT(ret == SIZE);
 	CU_ASSERT(circular_buffer_available_data(incrementing) == 0);
 
 	CU_ASSERT(circular_buffer_available_data(empty) == 0);
@@ -146,20 +214,25 @@ static CU_TestInfo tests_read[] = {
 
 void test_circular_buffer_write_all(void)
 {
-	char data[TEST_DATA_SIZE];
+	const unsigned int SIZE = 10, READ_SIZE = 5;
+	char buffer[SIZE], data[SIZE];
+	struct circular_buffer *incrementing, *empty;
 	int i, ret;
+
+	incrementing = incrementing_buffer(SIZE);
+	empty = circular_buffer_create(SIZE);
 
 	/* populate test data with incrementing numbers */
 	for (i = 0; i < sizeof(data); i++)
 		data[i] = i;
 
-	CU_ASSERT(circular_buffer_available_data(test1) == 0);
-	ret = circular_buffer_write(test1, data, TEST1_SIZE);
-	CU_ASSERT(ret == TEST1_SIZE);
-	CU_ASSERT(circular_buffer_available_data(test1) == TEST1_SIZE);
-	for (i = 0; i < test1->length; i++) {
-		if (test1->buffer[i] != i) {
-			CU_FAIL("Data written to test1 is incorrect.");
+	CU_ASSERT(circular_buffer_available_data(empty) == 0);
+	ret = circular_buffer_write(empty, data, SIZE);
+	CU_ASSERT(ret == SIZE);
+	CU_ASSERT(circular_buffer_available_data(empty) == SIZE);
+	for (i = 0; i < empty->length; i++) {
+		if (empty->buffer[i] != i) {
+			CU_FAIL("Data written to empty buffer is incorrect.");
 			break;
 		}
 	}
@@ -175,20 +248,24 @@ void test_circular_buffer_write_one_at_a_time(void)
 
 void test_circular_buffer_write_too_much(void)
 {
-	char data[TEST_DATA_SIZE + 1];
+	const unsigned int SIZE = 10, READ_SIZE = 5;
+	char data[SIZE + 1];
+	struct circular_buffer *incrementing, *empty;
 	int i, ret;
+
+	empty = circular_buffer_create(SIZE);
 
 	/* populate test data with incrementing numbers */
 	for (i = 0; i < sizeof(data); i++)
 		data[i] = i;
 
-	CU_ASSERT(circular_buffer_available_data(test2) == 0);
-	ret = circular_buffer_write(test2, data, sizeof(data));
+	CU_ASSERT(circular_buffer_available_data(empty) == 0);
+	ret = circular_buffer_write(empty, data, sizeof(data));
 	CU_ASSERT(ret == -1);
-	CU_ASSERT(circular_buffer_available_data(test2) == 0);
-	for (i = 0; i < test2->length; i++) {
-		if (test2->buffer[i] != 0) {
-			CU_FAIL("test2 was modified when it shouldn't have been.");
+	CU_ASSERT(circular_buffer_available_data(empty) == 0);
+	for (i = 0; i < empty->length; i++) {
+		if (empty->buffer[i] != 0) {
+			CU_FAIL("The buffer was modified when it shouldn't have been.");
 			break;
 		}
 	}
@@ -202,56 +279,10 @@ static CU_TestInfo tests_write[] = {
 	CU_TEST_INFO_NULL,
 };
 
-int suite_test_buffers_init(void)
-{
-	int i;
-	char data[TEST_DATA_SIZE];
-
-	/* populate test data with incrementing numbers */
-	for (i = 0; i < sizeof(data); i++)
-		data[i] = i;
-
-	incrementing = circular_buffer_create(INCREMENTING_SIZE);
-	if (!incrementing)
-		return -1;
-	empty = circular_buffer_create(sizeof(data));
-	if (!empty)
-		return -1;
-	test1 = circular_buffer_create(TEST1_SIZE);
-	if (!test1)
-		return -1;
-	test2 = circular_buffer_create(TEST1_SIZE);
-	if (!test2)
-		return -1;
-
-	circular_buffer_write(incrementing, data, INCREMENTING_SIZE);
-
-#if 0
-	printf("\n\n");
-	printf("incrementing:\t");
-	circular_buffer_debug(incrementing);
-	printf("empty:\t");
-	circular_buffer_debug(empty);
-	printf("test1:\t");
-	circular_buffer_debug(test1);
-#endif
-
-	return 0;
-}
-
-int suite_test_buffers_clean(void)
-{
-	circular_buffer_destroy(incrementing);
-	circular_buffer_destroy(empty);
-	circular_buffer_destroy(test1);
-
-	return 0;
-}
-
 static CU_SuiteInfo suites[] = {
-	{ "suite_utilities", suite_test_buffers_init, suite_test_buffers_clean, tests_utilities },
-	{ "suite_read",      suite_test_buffers_init, suite_test_buffers_clean, tests_read },
-	{ "suite_write",     suite_test_buffers_init, suite_test_buffers_clean, tests_write },
+	{ "suite_utilities", NULL, NULL, tests_utilities },
+	{ "suite_read",      NULL, NULL, tests_read },
+	{ "suite_write",     NULL, NULL, tests_write },
 	CU_SUITE_INFO_NULL,
 };
 
