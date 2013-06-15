@@ -279,10 +279,86 @@ static CU_TestInfo tests_write[] = {
 	CU_TEST_INFO_NULL,
 };
 
+void test_circular_buffer_head_wraps(void)
+{
+	const unsigned int SIZE = 10, READ_SIZE = 5, WRITE_SIZE = 5;
+	char data[SIZE];
+	struct circular_buffer *incrementing, *empty;
+	int i, ret;
+
+	incrementing = incrementing_buffer(SIZE);
+	empty = circular_buffer_create(SIZE);
+
+	for (i = 0; i < sizeof(data); i++)
+		data[i] = i;
+
+	/* Attempt to write to a full buffer and expect nothing to change. */
+	CU_ASSERT(incrementing->head == incrementing->length);
+	CU_ASSERT(incrementing->tail == 0);
+	ret = circular_buffer_write(incrementing, data, WRITE_SIZE);
+	CU_ASSERT(ret == -1);
+	CU_ASSERT(incrementing->head == incrementing->length);
+	CU_ASSERT(incrementing->tail == 0);
+	/* Now read some. */
+	ret = circular_buffer_read(incrementing, data, READ_SIZE);
+	CU_ASSERT(ret == READ_SIZE);
+	CU_ASSERT(incrementing->head == incrementing->length);
+	CU_ASSERT(incrementing->tail == READ_SIZE);
+	/* Now write and verify head has wrapped. */
+	ret = circular_buffer_write(incrementing, data, WRITE_SIZE);
+	CU_ASSERT(ret == WRITE_SIZE);
+	CU_ASSERT(incrementing->head == WRITE_SIZE - 1);
+	CU_ASSERT(incrementing->tail == READ_SIZE);
+}
+
+void test_circular_buffer_tail_wraps(void)
+{
+	const unsigned int SIZE = 10, READ_SIZE = 4, WRITE_SIZE = 5;
+	char data[SIZE];
+	struct circular_buffer *incrementing, *empty;
+	int i, ret;
+
+	incrementing = incrementing_buffer(SIZE);
+	empty = circular_buffer_create(SIZE);
+
+	for (i = 0; i < sizeof(data); i++)
+		data[i] = i;
+
+	/* Attempt to write to a full buffer and expect nothing to change. */
+	CU_ASSERT(incrementing->head == incrementing->length);
+	CU_ASSERT(incrementing->tail == 0);
+	ret = circular_buffer_write(incrementing, data, WRITE_SIZE);
+	CU_ASSERT(ret == -1);
+	CU_ASSERT(incrementing->head == incrementing->length);
+	CU_ASSERT(incrementing->tail == 0);
+	/* Now read all data. */
+	ret = circular_buffer_read(incrementing, data, incrementing->length);
+	CU_ASSERT(ret == incrementing->length);
+	CU_ASSERT(incrementing->head == incrementing->length);
+	CU_ASSERT(incrementing->tail == incrementing->length);
+	/* Now fill the buffer up again. */
+	ret = circular_buffer_write(incrementing, data, WRITE_SIZE);
+	CU_ASSERT(ret == WRITE_SIZE);
+	CU_ASSERT(incrementing->head == WRITE_SIZE - 1);
+	CU_ASSERT(incrementing->tail == incrementing->length);
+	/* Now read and verify tail has wrapped. */
+	ret = circular_buffer_read(incrementing, data, READ_SIZE);
+	CU_ASSERT(ret == READ_SIZE);
+	CU_ASSERT(incrementing->head == WRITE_SIZE - 1);
+	CU_ASSERT(incrementing->tail == READ_SIZE - 1);
+}
+
+static CU_TestInfo tests_read_write[] = {
+	{ "circular_buffer_head_wraps", test_circular_buffer_head_wraps },
+	{ "circular_buffer_tail_wraps", test_circular_buffer_tail_wraps },
+	CU_TEST_INFO_NULL,
+};
+
 static CU_SuiteInfo suites[] = {
-	{ "suite_utilities", NULL, NULL, tests_utilities },
-	{ "suite_read",      NULL, NULL, tests_read },
-	{ "suite_write",     NULL, NULL, tests_write },
+	{ "suite_utilities",  NULL, NULL, tests_utilities },
+	{ "suite_read",       NULL, NULL, tests_read },
+	{ "suite_write",      NULL, NULL, tests_write },
+	{ "suite_read_write", NULL, NULL, tests_read_write },
 	CU_SUITE_INFO_NULL,
 };
 
