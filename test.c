@@ -348,9 +348,39 @@ void test_circular_buffer_tail_wraps(void)
 	CU_ASSERT(incrementing->tail == READ_SIZE - 1);
 }
 
+void test_circular_buffer_validate_data(void)
+{
+	char data[] = "this is a test", validate[sizeof(data)];
+	struct circular_buffer *buffer;
+	int i, ret;
+
+	buffer = circular_buffer_create(sizeof(data));
+
+	/* Write the test data to the buffer and validate it is actually loaded. */
+	ret = circular_buffer_write(buffer, data, sizeof(data));
+	CU_ASSERT(ret == sizeof(data));
+	for (i = 0; i < sizeof(data); i++) {
+		if (buffer->buffer[i] != data[i]) {
+			CU_FAIL("Data written to buffer is not valid.");
+			break;
+		}
+	}
+
+	/* Read the test data and validate that it was actually copied. */
+	ret = circular_buffer_read(buffer, validate, sizeof(validate));
+	CU_ASSERT(ret == sizeof(validate));
+	for (i = 0; i < sizeof(validate); i++) {
+		if (validate[i] != data[i]) {
+			CU_FAIL("Data read from buffer is not valid.");
+			break;
+		}
+	}
+}
+
 static CU_TestInfo tests_read_write[] = {
-	{ "circular_buffer_head_wraps", test_circular_buffer_head_wraps },
-	{ "circular_buffer_tail_wraps", test_circular_buffer_tail_wraps },
+	{ "circular_buffer_head_wraps",    test_circular_buffer_head_wraps },
+	{ "circular_buffer_tail_wraps",    test_circular_buffer_tail_wraps },
+	{ "circular_buffer_validate_data", test_circular_buffer_validate_data },
 	CU_TEST_INFO_NULL,
 };
 
