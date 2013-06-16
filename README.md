@@ -15,7 +15,7 @@ Testing requires [CUnit][0] to be linked to the `test` target. By default it loo
 
 To run the unit tests:
 
-    make test && ./test
+    make
 
 [0]: http://cunit.sourceforge.net/
 
