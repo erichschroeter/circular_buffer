@@ -1,18 +1,19 @@
 # default target is...
 all::
 
+CC=gcc
 CFLAGS=-Wall
 
 libstatic:
-	gcc -c circular_buffer.c -o circular_buffer.o
+	$(CC) $(CFLAGS) -c circular_buffer.c -o circular_buffer.o
 	ar rcs libcircular_buffer.a circular_buffer.o
 
 libdynamic:
-	gcc -c -fPIC circular_buffer.c -o circular_buffer.o
+	$(CC) $(CFLAGS) -c -fPIC circular_buffer.c -o circular_buffer.o
 	gcc -shared -Wl,-soname,libcircular_buffer.so.1 -o libcircular_buffer.so.1.0.1 circular_buffer.o
 
 test: libstatic
-	gcc -static test.c -o test -L/usr/local/lib -L . -lcunit -lcircular_buffer
+	$(CC) $(CFLAGS) -static test.c -o test -L/usr/local/lib -L . -lcunit -lcircular_buffer
 
 .PHONY: test
 

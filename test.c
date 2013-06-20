@@ -65,11 +65,10 @@ void test_circular_buffer_ends_at(void)
 {
 	const unsigned int SIZE = 10, READ_SIZE = 5;
 	char buffer[SIZE];
-	struct circular_buffer *incrementing, *empty;
+	struct circular_buffer *incrementing;
 	char testdata[] = { 19, 84 };
 
 	incrementing = incrementing_buffer(SIZE);
-	empty = circular_buffer_create(20);
 
 	CU_ASSERT(circular_buffer_ends_at(incrementing) == incrementing->buffer + incrementing->length);
 	circular_buffer_read(incrementing, buffer, READ_SIZE);
@@ -133,13 +132,12 @@ static CU_TestInfo tests_utilities[] = {
 
 void test_circular_buffer_read_all(void)
 {
-	const unsigned int SIZE = 10, READ_SIZE = 5;
+	const unsigned int SIZE = 10;
 	char buffer[SIZE];
-	struct circular_buffer *incrementing, *empty;
+	struct circular_buffer *incrementing;
 	int i, ret;
 
 	incrementing = incrementing_buffer(SIZE);
-	empty = circular_buffer_create(20);
 
 	CU_ASSERT(circular_buffer_available_data(incrementing) == incrementing->length);
 	ret = circular_buffer_read(incrementing, buffer, sizeof(buffer));
@@ -155,7 +153,7 @@ void test_circular_buffer_read_all(void)
 
 void test_circular_buffer_read_none(void)
 {
-	const unsigned int SIZE = 10, READ_SIZE = 5;
+	const unsigned int SIZE = 10;
 	char buffer[SIZE];
 	struct circular_buffer *incrementing, *empty;
 	int ret;
@@ -180,7 +178,7 @@ void test_circular_buffer_read_one_at_a_time(void)
 
 void test_circular_buffer_read_too_much(void)
 {
-	const unsigned int SIZE = 10, READ_SIZE = 5;
+	const unsigned int SIZE = 10;
 	char buffer[SIZE + 1];
 	struct circular_buffer *incrementing, *empty;
 	int ret;
@@ -214,12 +212,11 @@ static CU_TestInfo tests_read[] = {
 
 void test_circular_buffer_write_all(void)
 {
-	const unsigned int SIZE = 10, READ_SIZE = 5;
-	char buffer[SIZE], data[SIZE];
-	struct circular_buffer *incrementing, *empty;
+	const unsigned int SIZE = 10;
+	char data[SIZE];
+	struct circular_buffer *empty;
 	int i, ret;
 
-	incrementing = incrementing_buffer(SIZE);
 	empty = circular_buffer_create(SIZE);
 
 	/* populate test data with incrementing numbers */
@@ -248,9 +245,9 @@ void test_circular_buffer_write_one_at_a_time(void)
 
 void test_circular_buffer_write_too_much(void)
 {
-	const unsigned int SIZE = 10, READ_SIZE = 5;
+	const unsigned int SIZE = 10;
 	char data[SIZE + 1];
-	struct circular_buffer *incrementing, *empty;
+	struct circular_buffer *empty;
 	int i, ret;
 
 	empty = circular_buffer_create(SIZE);
@@ -283,11 +280,10 @@ void test_circular_buffer_head_wraps(void)
 {
 	const unsigned int SIZE = 10, READ_SIZE = 5, WRITE_SIZE = 5;
 	char data[SIZE];
-	struct circular_buffer *incrementing, *empty;
+	struct circular_buffer *incrementing;
 	int i, ret;
 
 	incrementing = incrementing_buffer(SIZE);
-	empty = circular_buffer_create(SIZE);
 
 	for (i = 0; i < sizeof(data); i++)
 		data[i] = i;
@@ -315,11 +311,10 @@ void test_circular_buffer_tail_wraps(void)
 {
 	const unsigned int SIZE = 10, READ_SIZE = 4, WRITE_SIZE = 5;
 	char data[SIZE];
-	struct circular_buffer *incrementing, *empty;
+	struct circular_buffer *incrementing;
 	int i, ret;
 
 	incrementing = incrementing_buffer(SIZE);
-	empty = circular_buffer_create(SIZE);
 
 	for (i = 0; i < sizeof(data); i++)
 		data[i] = i;
@@ -406,7 +401,6 @@ int main(int argc, char **argv)
 	CU_set_error_action(CUEA_IGNORE);
 	CU_basic_run_tests();
 
-fail:
 	CU_cleanup_registry();
 	return CU_get_error();
 }
