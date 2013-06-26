@@ -15,10 +15,13 @@ libdynamic:
 test: libstatic
 	$(CC) $(CFLAGS) -static test.c -o test -L/usr/local/lib -L . -lcunit -lcircular_buffer
 
-.PHONY: test
+example: libstatic
+	$(CC) $(CFLAGS) -static example.c -o example -L/usr/local/lib -L . -lcunit -lcircular_buffer
+
+.PHONY: test example
 
 all:: test
 	./test
 
 clean:
-	rm -rf *.o libcircular_buffer.a libcircular_buffer.so.1.0.1 test
+	rm -rf *.o libcircular_buffer.a libcircular_buffer.so.1.0.1 test example
