@@ -22,16 +22,18 @@ struct circular_buffer *circular_buffer_create(int length)
 	buffer->tail = 0;
 	buffer->head = 0;
 	buffer->buffer = calloc(buffer->length + 1, sizeof(char));
+	if (!buffer->buffer) goto fail;
 
 	return buffer;
+fail:
+	free(buffer);
+	return NULL;
 }
 
 void circular_buffer_destroy(struct circular_buffer *buffer)
 {
-	if (buffer) {
-		free(buffer->buffer);
-		free(buffer);
-	}
+	free(buffer->buffer);
+	free(buffer);
 }
 
 int circular_buffer_available_data(struct circular_buffer *buffer)
