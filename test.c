@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <pthread.h>
 
 #include <CUnit/Basic.h>
 
@@ -379,11 +380,67 @@ static CU_TestInfo tests_read_write[] = {
 	CU_TEST_INFO_NULL,
 };
 
+static volatile int _running = 0;
+static void* circular_buffer_write_thread(void *circular_buffer)
+{
+	int i = 0;
+	struct circular_buffer *buffer = (struct circular_buffer*) circular_buffer;
+	char data[1];
+
+	while (_running) {
+		data[0] = i;
+		circular_buffer_write(buffer, data, 1);
+		i++;
+	}
+	return 0;
+}
+
+void test_circular_buffer_multithreading(void)
+{
+	int i, ret;
+	struct circular_buffer *buffer;
+	pthread_t thread;
+	const unsigned int VERIFY_NUM = 1024;
+	char data[1];
+
+	buffer = circular_buffer_create(1024);
+	CU_ASSERT_PTR_NOT_NULL(buffer);
+
+	_running = 1;
+	ret = pthread_create(&thread, NULL, &circular_buffer_write_thread, buffer);
+	CU_ASSERT(ret != 0);
+
+	/*
+	 * We are testing that each value we read from the buffer is incremented
+	 * by one. This will verify that there is no jumping around or overwriting
+	 * in the buffer when reading/writing in multithreaded environment.
+	 */
+	for (i = 0; i < VERIFY_NUM; i++) {
+		ret = circular_buffer_read(buffer, data, 1);
+		if (ret < 1) continue;
+		printf("i=%d\tdata=%d\n", i, data[0]);
+		if (data != i) {
+			_running = 0;
+			CU_FAIL("Multithreaded data is not syncronized.");
+			break;
+		}
+	}
+
+	pthread_cancel(thread);
+	circular_buffer_destroy(buffer);
+}
+
+static CU_TestInfo tests_multithreading[] = {
+	{ "circular_buffer_multithreading",    test_circular_buffer_multithreading },
+	CU_TEST_INFO_NULL,
+};
+
 static CU_SuiteInfo suites[] = {
-	{ "suite_utilities",  NULL, NULL, tests_utilities },
-	{ "suite_read",       NULL, NULL, tests_read },
-	{ "suite_write",      NULL, NULL, tests_write },
-	{ "suite_read_write", NULL, NULL, tests_read_write },
+	{ "suite_utilities",      NULL, NULL, tests_utilities },
+	{ "suite_read",           NULL, NULL, tests_read },
+	{ "suite_write",          NULL, NULL, tests_write },
+	{ "suite_read_write",     NULL, NULL, tests_read_write },
+	{ "suite_multithreading", NULL, NULL, tests_multithreading },
 	CU_SUITE_INFO_NULL,
 };
 

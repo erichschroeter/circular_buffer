@@ -13,7 +13,7 @@ libdynamic:
 	gcc -shared -Wl,-soname,libcircular_buffer.so.1 -o libcircular_buffer.so.1.0.1 circular_buffer.o
 
 test: libstatic
-	$(CC) $(CFLAGS) -static test.c -o test -L/usr/local/lib -L . -lcunit -lcircular_buffer
+	$(CC) $(CFLAGS) -static test.c -o test -L/usr/local/lib -L . -lcunit -lcircular_buffer -lpthread
 
 example: libstatic
 	$(CC) $(CFLAGS) -static example.c -o example -L/usr/local/lib -L . -lcunit -lcircular_buffer
