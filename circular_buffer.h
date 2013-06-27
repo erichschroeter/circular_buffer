@@ -1,11 +1,14 @@
 #ifndef CIRCULAR_BUFFER_H
 #define CIRCULAR_BUFFER_H
 
+#include <semaphore.h>
+
 struct circular_buffer {
 	char *buffer;
 	int length;
 	int tail;
 	int head;
+	sem_t mutex;
 };
 
 struct circular_buffer *circular_buffer_create(int length);

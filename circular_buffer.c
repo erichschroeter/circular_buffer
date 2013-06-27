@@ -24,7 +24,12 @@ struct circular_buffer *circular_buffer_create(int length)
 	buffer->buffer = calloc(buffer->length + 1, sizeof(char));
 	if (!buffer->buffer) goto fail;
 
+	int ret = sem_init(&buffer->mutex, 0, 1);
+	if (ret != 0) goto fail_mutex;
+
 	return buffer;
+fail_mutex:
+	free(buffer->buffer);
 fail:
 	free(buffer);
 	return NULL;
@@ -32,6 +37,7 @@ fail:
 
 void circular_buffer_destroy(struct circular_buffer *buffer)
 {
+	sem_destroy(&buffer->mutex);
 	free(buffer->buffer);
 	free(buffer);
 }
@@ -50,10 +56,21 @@ int circular_buffer_available_space(struct circular_buffer *buffer)
 
 int circular_buffer_read(struct circular_buffer *buffer, char *target, int amount)
 {
-	int available = circular_buffer_available_data(buffer);
+	int available, ret = 0;
+
+	ret = sem_wait(&buffer->mutex);
+	if (ret) {
+		amount = 0;
+		goto out;
+	}
+
+	available = circular_buffer_available_data(buffer);
 	amount = amount > available ? available : amount;
 
-	if (amount <= 0) return 0;
+	if (amount <= 0) {
+		amount = 0;
+		goto out;
+	}
 
 	if (buffer->tail <= buffer->head) {
 		memcpy(target, circular_buffer_starts_at(buffer), amount);
@@ -71,15 +88,27 @@ int circular_buffer_read(struct circular_buffer *buffer, char *target, int amoun
 
 	buffer->tail = (buffer->tail + amount) % (buffer->length + 1);
 
+out:
+	sem_post(&buffer->mutex);
+
 	return amount;
 }
 
 int circular_buffer_write(struct circular_buffer *buffer, char *data, int amount)
 {
+	int ret = 0;
+
+	ret = sem_wait(&buffer->mutex);
+	if (ret) {
+		amount = 0;
+		goto out;
+	}
+
 	if (amount > circular_buffer_available_space(buffer)) {
 		debug("Not enough space: %d request, %d available",
 			amount, circular_buffer_available_space(buffer));
-		return -1;
+		amount = -1;
+		goto out;
 	}
 
 	if (buffer->head >= buffer->tail) {
@@ -96,6 +125,9 @@ int circular_buffer_write(struct circular_buffer *buffer, char *data, int amount
 	}
 
 	buffer->head = (buffer->head + amount) % (buffer->length + 1);
+
+out:
+	sem_post(&buffer->mutex);
 
 	return amount;
 }

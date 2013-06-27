@@ -383,13 +383,18 @@ static CU_TestInfo tests_read_write[] = {
 static volatile int _running = 0;
 static void* circular_buffer_write_thread(void *circular_buffer)
 {
-	int i = 0;
+	int i = 0, ret;
 	struct circular_buffer *buffer = (struct circular_buffer*) circular_buffer;
-	char data[1];
+	char data[4];
 
 	while (_running) {
-		data[0] = i;
-		circular_buffer_write(buffer, data, 1);
+		data[0] = (i >> 24) & 0xff;
+		data[1] = (i >> 16) & 0xff;
+		data[2] = (i >> 8) & 0xff;
+		data[3] = i & 0xff;
+retry:
+		ret = circular_buffer_write(buffer, data, 4);
+		if (ret < 0) goto retry;
 		i++;
 	}
 	return 0;
@@ -397,18 +402,18 @@ static void* circular_buffer_write_thread(void *circular_buffer)
 
 void test_circular_buffer_multithreading(void)
 {
-	int i, ret;
+	int i, ret, value;
 	struct circular_buffer *buffer;
 	pthread_t thread;
 	const unsigned int VERIFY_NUM = 1024;
-	char data[1];
+	char data[4];
 
-	buffer = circular_buffer_create(1024);
+	buffer = circular_buffer_create(12);
 	CU_ASSERT_PTR_NOT_NULL(buffer);
 
 	_running = 1;
 	ret = pthread_create(&thread, NULL, &circular_buffer_write_thread, buffer);
-	CU_ASSERT(ret != 0);
+	CU_ASSERT(ret == 0);
 
 	/*
 	 * We are testing that each value we read from the buffer is incremented
@@ -416,10 +421,14 @@ void test_circular_buffer_multithreading(void)
 	 * in the buffer when reading/writing in multithreaded environment.
 	 */
 	for (i = 0; i < VERIFY_NUM; i++) {
-		ret = circular_buffer_read(buffer, data, 1);
-		if (ret < 1) continue;
-		printf("i=%d\tdata=%d\n", i, data[0]);
-		if (data != i) {
+retry:
+		ret = circular_buffer_read(buffer, data, 4);
+		if (ret < 1) goto retry;
+		value = ((data[0] << 24) & 0xff000000) |
+			((data[1] << 16) & 0xff0000) |
+			((data[2] << 8) & 0xff00) |
+			data[3] & 0xff;
+		if (value != i) {
 			_running = 0;
 			CU_FAIL("Multithreaded data is not syncronized.");
 			break;
