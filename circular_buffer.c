@@ -106,10 +106,10 @@ void circular_buffer_debug(struct circular_buffer *buf)
 	printf("{ length='%d' tail='%d' head='%d' available_data='%d' available_space='%d' buffer='",
 		buf->length, buf->tail, buf->head, circular_buffer_available_data(buf),
 		circular_buffer_available_space(buf));
-	for (i = 0; i < buf->length; i++) {
+	for (i = 0; i < buf->length + 1; i++) {
 		if (i != 0)
 			printf(" ");
-		printf("%x", buf->buffer[i]);
+		printf("%x", buf->buffer[i] & 0xff);
 	}
 	printf("' }\n");
 }
