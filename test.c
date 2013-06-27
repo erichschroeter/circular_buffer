@@ -394,7 +394,11 @@ static void* circular_buffer_write_thread(void *circular_buffer)
 		data[3] = i & 0xff;
 retry:
 		ret = circular_buffer_write(buffer, data, 4);
-		if (ret < 0) goto retry;
+		/*
+		 * In case we stop the thread from outside, we don't want to get
+		 * stuck in an infinite loop. So, check that we are still running.
+		 */
+		if (ret < 0 && _running) goto retry;
 		i++;
 	}
 	return 0;
@@ -427,7 +431,7 @@ retry:
 		value = ((data[0] << 24) & 0xff000000) |
 			((data[1] << 16) & 0xff0000) |
 			((data[2] << 8) & 0xff00) |
-			data[3] & 0xff;
+			(data[3] & 0xff);
 		if (value != i) {
 			_running = 0;
 			CU_FAIL("Multithreaded data is not syncronized.");
