@@ -1,40 +1,47 @@
 #include <stdio.h>
 #include <string.h>
+#include <getopt.h>
+#include <stdlib.h>
 
 #include "circular_buffer.h"
 
 #define DATA_SIZE 256
-#define BUFFER_SIZE 10
+
+static struct option _options[] = {
+	 { "buffer", no_argument, 0, 'b' },
+};
 
 int main(int argc, char **argv)
 {
-	int ret, i;
+	int ret, i, c, buffer_size = 10;
 	char data[DATA_SIZE + 1];
 	struct circular_buffer *b = 0;
 	
-	b = circular_buffer_create(BUFFER_SIZE);
+	while ((c = getopt_long(argc, argv, "b:", _options, 0)) != -1) {
+		switch (c) {
+		case 'b':
+			buffer_size = strtol(optarg, NULL, 10);
+			break;
+		}
+	}
+
+	b = circular_buffer_create(buffer_size);
 
 	if (!b) return -1;
 
 	memset(data, 0, sizeof(data));
 
-	if (argc > 1) {
-		for (i = 1; i < argc; i++) {
-			/*printf("argv[%d]='%s'\n", i, argv[i]);*/
+	if (argc - optind > 1) {
+		for (i = optind; i < argc; i++) {
 retry:
 			ret = circular_buffer_write(b, argv[i], strlen(argv[i]));
-				printf("write ret=%d\targv[%d]=%s\n", ret, i, argv[i]);
+			if (ret > 0) printf("write:'%s'\n", argv[i]);
 			if (ret == -1) {
 				ret = circular_buffer_read(b, data, sizeof(data));
 				data[ret] = 0;
-				printf("read  ret=%d\n", ret);
-				fprintf(stderr, "buffer dump='%s'\n", data);
+				fprintf(stderr, "read:'%s'\n", data);
 				memset(data, 0, sizeof(data));
 				goto retry;
-				/*fprintf(stderr,*/
-				/*"Not enough space to write '%s' in buffer of size %d bytes\n",*/
-				/*argv[i], b->length);*/
-				/*break;*/
 			}
 		}
 	} else {
@@ -44,7 +51,6 @@ retry:
 
 	circular_buffer_read(b, data, sizeof(data));
 	data[DATA_SIZE] = 0;
-	printf("buffer contents='%s'\n", data);
 
 	circular_buffer_destroy(b);
 

@@ -16,7 +16,7 @@ test: libstatic
 	$(CC) $(CFLAGS) -static test.c -o test -L/usr/local/lib -L . -lcunit -lcircular_buffer -lpthread
 
 example: libstatic
-	$(CC) $(CFLAGS) -static example.c -o example -L/usr/local/lib -L . -lcunit -lcircular_buffer
+	$(CC) $(CFLAGS) -static example.c -o example -L/usr/local/lib -L . -lcunit -lcircular_buffer -lpthread
 
 .PHONY: test example
 
