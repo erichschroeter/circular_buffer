@@ -121,6 +121,29 @@ void test_circular_buffer_available_space(void)
 	CU_ASSERT(circular_buffer_available_space(empty) == SIZE - WRITE_SIZE);
 }
 
+void test_circular_buffer_clear(void)
+{
+	const unsigned int INCREMENTING_SIZE = 10, EMPTY_SIZE = 20;
+	struct circular_buffer *incrementing, *empty;
+
+	incrementing = incrementing_buffer(INCREMENTING_SIZE);
+	empty = circular_buffer_create(EMPTY_SIZE);
+
+	circular_buffer_clear(incrementing);
+
+	CU_ASSERT(circular_buffer_available_data(incrementing) == 0);
+	CU_ASSERT(circular_buffer_available_space(incrementing) == INCREMENTING_SIZE);
+	CU_ASSERT_FALSE(circular_buffer_full(incrementing));
+	CU_ASSERT_TRUE(circular_buffer_empty(incrementing));
+
+	circular_buffer_clear(empty);
+
+	CU_ASSERT(circular_buffer_available_data(empty) == 0);
+	CU_ASSERT(circular_buffer_available_space(empty) == EMPTY_SIZE);
+	CU_ASSERT_FALSE(circular_buffer_full(empty));
+	CU_ASSERT_TRUE(circular_buffer_empty(empty));
+}
+
 static CU_TestInfo tests_utilities[] = {
 	{ "circular_buffer_full",            test_circular_buffer_full },
 	{ "circular_buffer_empty",           test_circular_buffer_empty },
@@ -128,6 +151,7 @@ static CU_TestInfo tests_utilities[] = {
 	{ "circular_buffer_ends_at",         test_circular_buffer_ends_at },
 	{ "circular_buffer_available_data",  test_circular_buffer_available_data },
 	{ "circular_buffer_available_space", test_circular_buffer_available_space },
+	{ "circular_buffer_clear",           test_circular_buffer_clear },
 	CU_TEST_INFO_NULL,
 };
 
