@@ -262,6 +262,18 @@ void test_circular_buffer_write_all(void)
 
 void test_circular_buffer_write_none(void)
 {
+	const unsigned int SIZE = 10;
+	struct circular_buffer *empty;
+	int ret;
+	char data[10];
+
+	empty = circular_buffer_create(SIZE);
+
+	ret = circular_buffer_write(empty, data, 0);
+
+	CU_ASSERT(ret == 0);
+	CU_ASSERT(circular_buffer_available_data(empty) == 0);
+	CU_ASSERT(circular_buffer_available_space(empty) == SIZE);
 }
 
 void test_circular_buffer_write_one_at_a_time(void)
