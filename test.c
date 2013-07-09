@@ -233,10 +233,6 @@ void test_circular_buffer_read_none(void)
 	CU_ASSERT(circular_buffer_available_data(empty) == 0);
 }
 
-void test_circular_buffer_read_one_at_a_time(void)
-{
-}
-
 void test_circular_buffer_read_too_much(void)
 {
 	const unsigned int SIZE = 10;
@@ -266,7 +262,6 @@ void test_circular_buffer_read_too_much(void)
 static CU_TestInfo tests_read[] = {
 	{ "circular_buffer_read_all",           test_circular_buffer_read_all },
 	{ "circular_buffer_read_none",          test_circular_buffer_read_none },
-	{ "circular_buffer_read_one_at_a_time", test_circular_buffer_read_one_at_a_time },
 	{ "circular_buffer_read_too_much",      test_circular_buffer_read_too_much },
 	CU_TEST_INFO_NULL,
 };
@@ -312,10 +307,6 @@ void test_circular_buffer_write_none(void)
 	CU_ASSERT(circular_buffer_available_space(empty) == SIZE);
 }
 
-void test_circular_buffer_write_one_at_a_time(void)
-{
-}
-
 void test_circular_buffer_write_too_much(void)
 {
 	const unsigned int SIZE = 10;
@@ -344,7 +335,6 @@ void test_circular_buffer_write_too_much(void)
 static CU_TestInfo tests_write[] = {
 	{ "circular_buffer_write_all",           test_circular_buffer_write_all },
 	{ "circular_buffer_write_none",          test_circular_buffer_write_none },
-	{ "circular_buffer_write_one_at_a_time", test_circular_buffer_write_one_at_a_time },
 	{ "circular_buffer_write_too_much",      test_circular_buffer_write_too_much },
 	CU_TEST_INFO_NULL,
 };
