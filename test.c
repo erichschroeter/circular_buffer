@@ -51,14 +51,19 @@ void test_circular_buffer_starts_at(void)
 	struct circular_buffer *incrementing, *empty;
 
 	incrementing = incrementing_buffer(SIZE);
-	empty = circular_buffer_create(20);
 
+	/* Verify the data starts at the beginning of a full buffer. */
 	CU_ASSERT(circular_buffer_starts_at(incrementing) == incrementing->buffer);
 	circular_buffer_read(incrementing, buffer, READ_SIZE);
+	/* Verify the data starts at the correct offset from the beginning of the buffer. */
 	CU_ASSERT(circular_buffer_starts_at(incrementing) == incrementing->buffer + READ_SIZE);
 
+	empty = circular_buffer_create(20);
+
+	/* Verify the data starts at the beginning of an empty buffer. */
 	CU_ASSERT(circular_buffer_starts_at(empty) == empty->buffer);
 	circular_buffer_read(empty, buffer, READ_SIZE);
+	/* Verify the data start position has not changed after reading an empty buffer. */
 	CU_ASSERT(circular_buffer_starts_at(empty) == empty->buffer);
 }
 
@@ -110,12 +115,16 @@ void test_circular_buffer_available_data(void)
 	incrementing = incrementing_buffer(SIZE);
 	empty = circular_buffer_create(20);
 
+	/* Verify a full buffer has the correct amount of data. */
 	CU_ASSERT(circular_buffer_available_data(incrementing) == SIZE);
 	circular_buffer_read(incrementing, buffer, READ_SIZE);
+	/* Verify the buffer has reduced the available data by the amount read. */
 	CU_ASSERT(circular_buffer_available_data(incrementing) == SIZE - READ_SIZE);
 
+	/* Verify an empty buffer has no data available. */
 	CU_ASSERT(circular_buffer_available_data(empty) == 0);
 	circular_buffer_read(empty, buffer, READ_SIZE);
+	/* Verify that no data is still available. */
 	CU_ASSERT(circular_buffer_available_data(empty) == 0);
 }
 
@@ -132,31 +141,36 @@ void test_circular_buffer_available_space(void)
 	for (i = 0; i < sizeof(data); i++)
 		data[i] = i;
 
+	/* Verify there is no space available in a full buffer. */
 	CU_ASSERT(circular_buffer_available_space(incrementing) == 0);
 	circular_buffer_read(incrementing, buffer, READ_SIZE);
+	/* Verify the space available is the amount just read of a full buffer. */
 	CU_ASSERT(circular_buffer_available_space(incrementing) == READ_SIZE);
 
+	/* Verify the space available is the size of an empty buffer. */
 	CU_ASSERT(circular_buffer_available_space(empty) == SIZE);
 	circular_buffer_read(empty, buffer, READ_SIZE);
+	/* Verify that reading doesn't affect the space available of an empty buffer. */
 	CU_ASSERT(circular_buffer_available_space(empty) == SIZE);
 	circular_buffer_write(empty, data, WRITE_SIZE);
+	/* Verify the space available is reduced by the amount written. */
 	CU_ASSERT(circular_buffer_available_space(empty) == SIZE - WRITE_SIZE);
 }
 
 void test_circular_buffer_clear(void)
 {
-	const unsigned int INCREMENTING_SIZE = 10, EMPTY_SIZE = 20;
-	struct circular_buffer *incrementing, *empty;
+	const unsigned int FULL_SIZE = 10, EMPTY_SIZE = 20;
+	struct circular_buffer *full, *empty;
 
-	incrementing = incrementing_buffer(INCREMENTING_SIZE);
+	full = incrementing_buffer(FULL_SIZE);
 	empty = circular_buffer_create(EMPTY_SIZE);
 
-	circular_buffer_clear(incrementing);
+	circular_buffer_clear(full);
 
-	CU_ASSERT(circular_buffer_available_data(incrementing) == 0);
-	CU_ASSERT(circular_buffer_available_space(incrementing) == INCREMENTING_SIZE);
-	CU_ASSERT_FALSE(circular_buffer_full(incrementing));
-	CU_ASSERT_TRUE(circular_buffer_empty(incrementing));
+	CU_ASSERT(circular_buffer_available_data(full) == 0);
+	CU_ASSERT(circular_buffer_available_space(full) == FULL_SIZE);
+	CU_ASSERT_FALSE(circular_buffer_full(full));
+	CU_ASSERT_TRUE(circular_buffer_empty(full));
 
 	circular_buffer_clear(empty);
 
@@ -362,6 +376,7 @@ void test_circular_buffer_head_wraps(void)
 	/* Now write and verify head has wrapped. */
 	ret = circular_buffer_write(incrementing, data, WRITE_SIZE);
 	CU_ASSERT(ret == WRITE_SIZE);
+	/* head should be 1 less than WRITE_SIZE since the actual buffer is length + 1. */
 	CU_ASSERT(incrementing->head == WRITE_SIZE - 1);
 	CU_ASSERT(incrementing->tail == READ_SIZE);
 }
@@ -393,6 +408,7 @@ void test_circular_buffer_tail_wraps(void)
 	/* Now fill the buffer up again. */
 	ret = circular_buffer_write(incrementing, data, WRITE_SIZE);
 	CU_ASSERT(ret == WRITE_SIZE);
+	/* head should be 1 less than WRITE_SIZE since the actual buffer is length + 1. */
 	CU_ASSERT(incrementing->head == WRITE_SIZE - 1);
 	CU_ASSERT(incrementing->tail == incrementing->length);
 	/* Now read and verify tail has wrapped. */
