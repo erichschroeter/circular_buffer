@@ -37,7 +37,12 @@ fail:
 
 void circular_buffer_destroy(struct circular_buffer *buffer)
 {
-	sem_destroy(&buffer->mutex);
+	int ret;
+
+	/* Make sure no other threads are using the buffer before destroying it. */
+	ret = sem_wait(&buffer->mutex);
+	if (ret)
+		return;
 	free(buffer->buffer);
 	free(buffer);
 }
