@@ -20,6 +20,7 @@ int circular_buffer_full(struct circular_buffer *buffer);
 int circular_buffer_available_data(struct circular_buffer *buffer);
 int circular_buffer_available_space(struct circular_buffer *buffer);
 void circular_buffer_debug(struct circular_buffer *buf);
+void circular_buffer_clear(struct circular_buffer *buf);
 
 #define circular_buffer_full(B) (circular_buffer_available_space((B)) == 0)
 #define circular_buffer_empty(B) (circular_buffer_available_data((B)) == 0)

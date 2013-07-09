@@ -154,3 +154,9 @@ void circular_buffer_debug(struct circular_buffer *buf)
 	}
 	printf("' }\n");
 }
+
+void circular_buffer_clear(struct circular_buffer *buf)
+{
+	buf->tail = 0;
+	buf->head = 0;
+}
