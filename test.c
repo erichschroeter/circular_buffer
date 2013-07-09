@@ -64,19 +64,41 @@ void test_circular_buffer_starts_at(void)
 
 void test_circular_buffer_ends_at(void)
 {
-	const unsigned int SIZE = 10, READ_SIZE = 5;
+	char testdata[] = "test data";
+	const unsigned int SIZE = sizeof(testdata);
 	char buffer[SIZE];
-	struct circular_buffer *incrementing;
-	char testdata[] = { 19, 84 };
+	struct circular_buffer *full, *empty;
 
-	incrementing = incrementing_buffer(SIZE);
+	full = incrementing_buffer(SIZE);
 
-	CU_ASSERT(circular_buffer_ends_at(incrementing) == incrementing->buffer + incrementing->length);
-	circular_buffer_read(incrementing, buffer, READ_SIZE);
-	CU_ASSERT(circular_buffer_ends_at(incrementing) == incrementing->buffer + incrementing->length);
-	circular_buffer_write(incrementing, testdata, sizeof(testdata));
-	/* make sure head wraps */
-	CU_ASSERT(circular_buffer_ends_at(incrementing) == incrementing->buffer + sizeof(testdata) - 1);
+	/* Verify the data ends at the end of a full buffer. */
+	CU_ASSERT(circular_buffer_ends_at(full) == full->buffer + full->length);
+	/* Make some room to write some more. */
+	circular_buffer_read(full, buffer, SIZE);
+	/* Verify the data end position has not changed from reading. */
+	CU_ASSERT(circular_buffer_ends_at(full) == full->buffer + full->length);
+	circular_buffer_write(full, testdata, SIZE);
+	/*
+	 * Verify the data ends at the correct offset from the beginning of the buffer.
+	 * Since this was a full buffer we need to take into account the head wrapping. The
+	 * -1 exists because the actual size of the buffer is length + 1.
+	 */
+	CU_ASSERT(circular_buffer_ends_at(full) == (full->buffer + SIZE - 1));
+
+	/* Create an empty buffer big enough to fit the test data. */
+	empty = circular_buffer_create(SIZE + 1);
+
+	/* Verify the data ends at the beginning of an empty buffer. */
+	CU_ASSERT(circular_buffer_starts_at(empty) == empty->buffer);
+	circular_buffer_read(empty, buffer, SIZE);
+	/* Verify the data end position has not changed after reading an empty buffer. */
+	CU_ASSERT(circular_buffer_starts_at(empty) == empty->buffer);
+	circular_buffer_write(empty, testdata, SIZE);
+	/*
+	 * Verify the data ends at the correct offset from the beginning of the buffer.
+	 * We don't have to take into account the -1 since we haven't wrapped this buffer.
+	 */
+	CU_ASSERT(circular_buffer_ends_at(empty) == empty->buffer + SIZE);
 }
 
 void test_circular_buffer_available_data(void)
