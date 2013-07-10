@@ -31,22 +31,28 @@ int main(int argc, char **argv)
 
 	memset(data, 0, sizeof(data));
 
-	if (argc - optind > 1) {
-		for (i = optind; i < argc; i++) {
-retry:
-			ret = circular_buffer_write(b, argv[i], strlen(argv[i]));
-			if (ret > 0) printf("write:'%s'\n", argv[i]);
-			if (ret == -1) {
-				ret = circular_buffer_read(b, data, sizeof(data));
-				data[ret] = 0;
-				fprintf(stderr, "read:'%s'\n", data);
-				memset(data, 0, sizeof(data));
-				goto retry;
-			}
-		}
-	} else {
+	if (argc - optind < 1) {
 		fprintf(stderr, "Nothing to write to buffer.\n");
 		return -1;
+	}
+
+	for (i = optind; i < argc; i++) {
+		int written = 0;
+		do {
+			if (circular_buffer_full(b)) {
+				ret = circular_buffer_read(b, data, sizeof(data));
+				data[ret] = 0;
+				fprintf(stderr, "read\t'%s'\n", data);
+				memset(data, 0, sizeof(data));
+			}
+
+			ret = circular_buffer_write(b, argv[i] + written, circular_buffer_available_space(b));
+			/* If write was successful, inform user what was written. */
+			char copy[ret + 1];
+			snprintf(copy, ret + 1, "%s", argv[i] + written);
+			if (ret > 0) printf("write\t'%s'\n", copy);
+			written += ret;
+		} while (written <= strlen(argv[i]));
 	}
 
 	circular_buffer_read(b, data, sizeof(data));
