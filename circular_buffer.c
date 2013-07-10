@@ -3,6 +3,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "circular_buffer.h"
 
@@ -80,12 +81,11 @@ int circular_buffer_read(struct circular_buffer *buffer, char *target, int amoun
 	if (buffer->tail <= buffer->head) {
 		memcpy(target, circular_buffer_starts_at(buffer), amount);
 	} else {
-		int tail_space = buffer->length - buffer->tail;
+		int tail_space = (buffer->length + 1) - buffer->tail;
+		assert(tail_space >= 0);
 		if (tail_space <= amount) {
 			memcpy(target, circular_buffer_starts_at(buffer), tail_space);
-			memcpy(target + tail_space,
-				circular_buffer_starts_at(buffer) + tail_space,
-				amount - tail_space);
+			memcpy(target + tail_space, buffer->buffer, amount - tail_space);
 		} else {
 			memcpy(target, circular_buffer_starts_at(buffer), amount);
 		}
@@ -117,13 +117,13 @@ int circular_buffer_write(struct circular_buffer *buffer, char *data, int amount
 	}
 
 	if (buffer->head >= buffer->tail) {
-		int head_space = buffer->length - buffer->head;
+		int head_space = (buffer->length + 1) - buffer->head;
+		assert(head_space >= 0);
 		if (head_space >= amount) {
 			memcpy(circular_buffer_ends_at(buffer), data, amount);
 		} else {
 			memcpy(circular_buffer_ends_at(buffer), data, head_space);
-			memcpy(circular_buffer_ends_at(buffer) + head_space,
-				data + head_space, amount - head_space);
+			memcpy(buffer->buffer, data + head_space, amount - head_space);
 		}
 	} else {
 		memcpy(circular_buffer_ends_at(buffer), data, amount);

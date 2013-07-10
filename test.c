@@ -437,10 +437,49 @@ void test_circular_buffer_validate_data(void)
 	}
 }
 
+void test_circular_buffer_wrapping_boundary(void)
+{
+	char data[] = {1,2,3,4}, data2[] = {5,6}, validate[sizeof(data)];
+	struct circular_buffer *buffer;
+	int i, ret;
+
+	buffer = circular_buffer_create(sizeof(data));
+
+	/* Write the test data to the buffer and validate it is actually loaded. */
+	ret = circular_buffer_write(buffer, data, sizeof(data));
+	CU_ASSERT(ret == sizeof(data));
+	for (i = 0; i < sizeof(data); i++) {
+		if (buffer->buffer[i] != data[i]) {
+			CU_FAIL("Data written to buffer is not valid.");
+			break;
+		}
+	}
+
+	/*
+	 * At this point the buffer is full. Now we need to create the condition
+	 * where tail is located at the very last position before wrapping and
+	 * then read the buffer.
+	 */
+	ret = circular_buffer_read(buffer, validate, 4);
+	CU_ASSERT(ret == 4);
+	ret = circular_buffer_write(buffer, data2, 2);
+	CU_ASSERT(ret == 2);
+	/* Verify that a read that wraps has valid data. */
+	ret = circular_buffer_read(buffer, validate, 2);
+	CU_ASSERT(ret == 2);
+	for (i = 0; i < 2; i++) {
+		if (validate[i] != data2[i]) {
+			CU_FAIL("Data read from buffer is not valid.");
+			break;
+		}
+	}
+}
+
 static CU_TestInfo tests_read_write[] = {
-	{ "circular_buffer_head_wraps",    test_circular_buffer_head_wraps },
-	{ "circular_buffer_tail_wraps",    test_circular_buffer_tail_wraps },
-	{ "circular_buffer_validate_data", test_circular_buffer_validate_data },
+	{ "circular_buffer_head_wraps",        test_circular_buffer_head_wraps },
+	{ "circular_buffer_tail_wraps",        test_circular_buffer_tail_wraps },
+	{ "circular_buffer_validate_data",     test_circular_buffer_validate_data },
+	{ "circular_buffer_wrapping_boundary", test_circular_buffer_wrapping_boundary },
 	CU_TEST_INFO_NULL,
 };
 
