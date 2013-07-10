@@ -50,14 +50,25 @@ void circular_buffer_destroy(struct circular_buffer *buffer)
 
 int circular_buffer_available_data(struct circular_buffer *buffer)
 {
-	if (buffer->head == buffer->tail) return 0;
-	if (buffer->tail < buffer->head) return buffer->head - buffer->tail;
-	return (buffer->length + 1) - buffer->tail + buffer->head;
+	int available = 0;
+
+	if (buffer->head == buffer->tail)
+		available = 0;
+	else if (buffer->tail < buffer->head)
+		available = buffer->head - buffer->tail;
+	else
+		available = (buffer->length + 1) - buffer->tail + buffer->head;
+
+	assert(available >= 0);
+
+	return available;
 }
 
 int circular_buffer_available_space(struct circular_buffer *buffer)
 {
-	return buffer->length - circular_buffer_available_data(buffer);
+	int available = buffer->length - circular_buffer_available_data(buffer);
+	assert(available >= 0);
+	return available;
 }
 
 int circular_buffer_read(struct circular_buffer *buffer, char *target, int amount)
