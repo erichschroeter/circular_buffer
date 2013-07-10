@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include <CUnit/Basic.h>
 
@@ -501,7 +502,7 @@ retry:
 		 * In case we stop the thread from outside, we don't want to get
 		 * stuck in an infinite loop. So, check that we are still running.
 		 */
-		if (ret < 0 && _running) goto retry;
+		if (ret < 0 && _running) { usleep(10); goto retry; }
 		i++;
 	}
 	return 0;
@@ -512,7 +513,7 @@ void test_circular_buffer_multithreading(void)
 	int i, ret, value;
 	struct circular_buffer *buffer;
 	pthread_t thread;
-	const unsigned int VERIFY_NUM = 1024;
+	const unsigned int VERIFY_NUM = 100000;
 	char data[4];
 
 	buffer = circular_buffer_create(12);
@@ -530,7 +531,8 @@ void test_circular_buffer_multithreading(void)
 	for (i = 0; i < VERIFY_NUM; i++) {
 retry:
 		ret = circular_buffer_read(buffer, data, 4);
-		if (ret < 1) goto retry;
+		/* In case the write thread hasn't kept up keep trying to read. */
+		if (ret < 1) { goto retry; }
 		value = ((data[0] << 24) & 0xff000000) |
 			((data[1] << 16) & 0xff0000) |
 			((data[2] << 8) & 0xff00) |
