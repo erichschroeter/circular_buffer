@@ -1,21 +1,20 @@
+A drop-in [circular buffer][0] utility.
+
 # Building
 
-Circular buffer library can be built as both a static or dynamic library.
+Install dependencies:
 
-    make libstatic
+    sudo apt-get install cmake
 
-    make libdynamic
+Then compile:
+
+    mkdir build && cd build/ && cmake .. && make
 
 # Testing
 
-Testing requires [CUnit][0] to be linked to the `test` target. By default it looks in `/usr/local/lib` for `libcunit.a`. For most systems, the following should be enough to install CUnit.
+After compiling, run the unit tests:
 
-1. download CUnit, unpack it, and `cd` into the unpacked directory
-1. `./configure && sudo make install`
+    ./test/run_tests
 
-To run the unit tests:
-
-    make
-
-[0]: http://cunit.sourceforge.net/
+[0]: http://en.wikipedia.org/wiki/Circular_buffer
 
