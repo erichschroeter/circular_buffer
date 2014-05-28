@@ -3,6 +3,10 @@
 
 #include <semaphore.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct circular_buffer {
 	char *buffer;
 	int length;
@@ -28,5 +32,9 @@ void circular_buffer_clear(struct circular_buffer *buf);
 #define circular_buffer_ends_at(B) ((B)->buffer + (B)->head)
 #define circular_buffer_commit_read(B, A) ((B)->tail = ((B)->tail + (A)) % (B)->length)
 #define circular_buffer_commit_write(B, A) ((B)->head = ((B)->head + (A)) % (B)->length)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CIRCULAR_BUFFER_H */
