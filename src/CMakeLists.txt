@@ -9,3 +9,8 @@ add_library(cb_static STATIC ${SRCS})
 target_link_libraries(cb pthread)
 target_link_libraries(cb_static pthread)
 install(TARGETS cb DESTINATION lib)
+
+install(FILES
+circular_buffer.h
+DESTINATION include
+COMPONENT headers)
