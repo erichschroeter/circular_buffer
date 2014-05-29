@@ -14,7 +14,7 @@ static struct circular_buffer* incrementing_buffer(int size)
 {
 	int i;
 	char data[size];
-	struct circular_buffer *buffer = circular_buffer_create(size);
+	struct circular_buffer *buffer = cb_create(size);
 
 	REQUIRE(buffer != 0);
 
@@ -22,7 +22,7 @@ static struct circular_buffer* incrementing_buffer(int size)
 	for (i = 0; i < sizeof(data); i++)
 		data[i] = i;
 
-	circular_buffer_write(buffer, data, sizeof(data));
+	cb_write(buffer, data, sizeof(data));
 
 	return buffer;
 }
@@ -32,10 +32,10 @@ TEST_CASE("Circular buffer full function", "[full][utility]")
 	struct circular_buffer *incrementing, *empty;
 
 	incrementing = incrementing_buffer(10);
-	empty = circular_buffer_create(20);
+	empty = cb_create(20);
 
-	REQUIRE(circular_buffer_full(incrementing) == 1);
-	REQUIRE(circular_buffer_full(empty) == 0);
+	REQUIRE(cb_full(incrementing) == 1);
+	REQUIRE(cb_full(empty) == 0);
 }
 
 TEST_CASE("Circular buffer empty function", "[empty][utility]")
@@ -43,10 +43,10 @@ TEST_CASE("Circular buffer empty function", "[empty][utility]")
 	struct circular_buffer *incrementing, *empty;
 
 	incrementing = incrementing_buffer(10);
-	empty = circular_buffer_create(20);
+	empty = cb_create(20);
 
-	REQUIRE(circular_buffer_empty(incrementing) == 0);
-	REQUIRE(circular_buffer_empty(empty) == 1);
+	REQUIRE(cb_empty(incrementing) == 0);
+	REQUIRE(cb_empty(empty) == 1);
 }
 
 TEST_CASE("Circular buffer starts at function", "[utility]")
@@ -58,18 +58,18 @@ TEST_CASE("Circular buffer starts at function", "[utility]")
 	incrementing = incrementing_buffer(SIZE);
 
 	/* Verify the data starts at the beginning of a full buffer. */
-	REQUIRE(circular_buffer_starts_at(incrementing) == incrementing->buffer);
-	circular_buffer_read(incrementing, buffer, READ_SIZE);
+	REQUIRE(cb_starts_at(incrementing) == incrementing->buffer);
+	cb_read(incrementing, buffer, READ_SIZE);
 	/* Verify the data starts at the correct offset from the beginning of the buffer. */
-	REQUIRE(circular_buffer_starts_at(incrementing) == incrementing->buffer + READ_SIZE);
+	REQUIRE(cb_starts_at(incrementing) == incrementing->buffer + READ_SIZE);
 
-	empty = circular_buffer_create(20);
+	empty = cb_create(20);
 
 	/* Verify the data starts at the beginning of an empty buffer. */
-	REQUIRE(circular_buffer_starts_at(empty) == empty->buffer);
-	circular_buffer_read(empty, buffer, READ_SIZE);
+	REQUIRE(cb_starts_at(empty) == empty->buffer);
+	cb_read(empty, buffer, READ_SIZE);
 	/* Verify the data start position has not changed after reading an empty buffer. */
-	REQUIRE(circular_buffer_starts_at(empty) == empty->buffer);
+	REQUIRE(cb_starts_at(empty) == empty->buffer);
 }
 
 TEST_CASE("Circular buffer ends at function", "[utility]")
@@ -82,33 +82,33 @@ TEST_CASE("Circular buffer ends at function", "[utility]")
 	full = incrementing_buffer(SIZE);
 
 	/* Verify the data ends at the end of a full buffer. */
-	REQUIRE(circular_buffer_ends_at(full) == full->buffer + full->length);
+	REQUIRE(cb_ends_at(full) == full->buffer + full->length);
 	/* Make some room to write some more. */
-	circular_buffer_read(full, buffer, SIZE);
+	cb_read(full, buffer, SIZE);
 	/* Verify the data end position has not changed from reading. */
-	REQUIRE(circular_buffer_ends_at(full) == full->buffer + full->length);
-	circular_buffer_write(full, testdata, SIZE);
+	REQUIRE(cb_ends_at(full) == full->buffer + full->length);
+	cb_write(full, testdata, SIZE);
 	/*
 	 * Verify the data ends at the correct offset from the beginning of the buffer.
 	 * Since this was a full buffer we need to take into account the head wrapping. The
 	 * -1 exists because the actual size of the buffer is length + 1.
 	 */
-	REQUIRE(circular_buffer_ends_at(full) == (full->buffer + SIZE - 1));
+	REQUIRE(cb_ends_at(full) == (full->buffer + SIZE - 1));
 
 	/* Create an empty buffer big enough to fit the test data. */
-	empty = circular_buffer_create(SIZE + 1);
+	empty = cb_create(SIZE + 1);
 
 	/* Verify the data ends at the beginning of an empty buffer. */
-	REQUIRE(circular_buffer_starts_at(empty) == empty->buffer);
-	circular_buffer_read(empty, buffer, SIZE);
+	REQUIRE(cb_starts_at(empty) == empty->buffer);
+	cb_read(empty, buffer, SIZE);
 	/* Verify the data end position has not changed after reading an empty buffer. */
-	REQUIRE(circular_buffer_starts_at(empty) == empty->buffer);
-	circular_buffer_write(empty, testdata, SIZE);
+	REQUIRE(cb_starts_at(empty) == empty->buffer);
+	cb_write(empty, testdata, SIZE);
 	/*
 	 * Verify the data ends at the correct offset from the beginning of the buffer.
 	 * We don't have to take into account the -1 since we haven't wrapped this buffer.
 	 */
-	REQUIRE(circular_buffer_ends_at(empty) == empty->buffer + SIZE);
+	REQUIRE(cb_ends_at(empty) == empty->buffer + SIZE);
 }
 
 TEST_CASE("Circular buffer available data function", "[utility]")
@@ -118,19 +118,19 @@ TEST_CASE("Circular buffer available data function", "[utility]")
 	struct circular_buffer *incrementing, *empty;
 
 	incrementing = incrementing_buffer(SIZE);
-	empty = circular_buffer_create(20);
+	empty = cb_create(20);
 
 	/* Verify a full buffer has the correct amount of data. */
-	REQUIRE(circular_buffer_available_data(incrementing) == SIZE);
-	circular_buffer_read(incrementing, buffer, READ_SIZE);
+	REQUIRE(cb_available_data(incrementing) == SIZE);
+	cb_read(incrementing, buffer, READ_SIZE);
 	/* Verify the buffer has reduced the available data by the amount read. */
-	REQUIRE(circular_buffer_available_data(incrementing) == SIZE - READ_SIZE);
+	REQUIRE(cb_available_data(incrementing) == SIZE - READ_SIZE);
 
 	/* Verify an empty buffer has no data available. */
-	REQUIRE(circular_buffer_available_data(empty) == 0);
-	circular_buffer_read(empty, buffer, READ_SIZE);
+	REQUIRE(cb_available_data(empty) == 0);
+	cb_read(empty, buffer, READ_SIZE);
 	/* Verify that no data is still available. */
-	REQUIRE(circular_buffer_available_data(empty) == 0);
+	REQUIRE(cb_available_data(empty) == 0);
 }
 
 TEST_CASE("Circular buffer available space function", "[utility]")
@@ -141,25 +141,25 @@ TEST_CASE("Circular buffer available space function", "[utility]")
 	int i;
 
 	incrementing = incrementing_buffer(SIZE);
-	empty = circular_buffer_create(SIZE);
+	empty = cb_create(SIZE);
 
 	for (i = 0; i < sizeof(data); i++)
 		data[i] = i;
 
 	/* Verify there is no space available in a full buffer. */
-	REQUIRE(circular_buffer_available_space(incrementing) == 0);
-	circular_buffer_read(incrementing, buffer, READ_SIZE);
+	REQUIRE(cb_available_space(incrementing) == 0);
+	cb_read(incrementing, buffer, READ_SIZE);
 	/* Verify the space available is the amount just read of a full buffer. */
-	REQUIRE(circular_buffer_available_space(incrementing) == READ_SIZE);
+	REQUIRE(cb_available_space(incrementing) == READ_SIZE);
 
 	/* Verify the space available is the size of an empty buffer. */
-	REQUIRE(circular_buffer_available_space(empty) == SIZE);
-	circular_buffer_read(empty, buffer, READ_SIZE);
+	REQUIRE(cb_available_space(empty) == SIZE);
+	cb_read(empty, buffer, READ_SIZE);
 	/* Verify that reading doesn't affect the space available of an empty buffer. */
-	REQUIRE(circular_buffer_available_space(empty) == SIZE);
-	circular_buffer_write(empty, data, WRITE_SIZE);
+	REQUIRE(cb_available_space(empty) == SIZE);
+	cb_write(empty, data, WRITE_SIZE);
 	/* Verify the space available is reduced by the amount written. */
-	REQUIRE(circular_buffer_available_space(empty) == SIZE - WRITE_SIZE);
+	REQUIRE(cb_available_space(empty) == SIZE - WRITE_SIZE);
 }
 
 TEST_CASE("Circular buffer clear function", "[utility]")
@@ -168,21 +168,21 @@ TEST_CASE("Circular buffer clear function", "[utility]")
 	struct circular_buffer *full, *empty;
 
 	full = incrementing_buffer(FULL_SIZE);
-	empty = circular_buffer_create(EMPTY_SIZE);
+	empty = cb_create(EMPTY_SIZE);
 
-	circular_buffer_clear(full);
+	cb_clear(full);
 
-	REQUIRE(circular_buffer_available_data(full) == 0);
-	REQUIRE(circular_buffer_available_space(full) == FULL_SIZE);
-	REQUIRE(circular_buffer_full(full) == 0);
-	REQUIRE(circular_buffer_empty(full) == 1);
+	REQUIRE(cb_available_data(full) == 0);
+	REQUIRE(cb_available_space(full) == FULL_SIZE);
+	REQUIRE(cb_full(full) == 0);
+	REQUIRE(cb_empty(full) == 1);
 
-	circular_buffer_clear(empty);
+	cb_clear(empty);
 
-	REQUIRE(circular_buffer_available_data(empty) == 0);
-	REQUIRE(circular_buffer_available_space(empty) == EMPTY_SIZE);
-	REQUIRE(circular_buffer_full(empty) == 0);
-	REQUIRE(circular_buffer_empty(empty) == 1);
+	REQUIRE(cb_available_data(empty) == 0);
+	REQUIRE(cb_available_space(empty) == EMPTY_SIZE);
+	REQUIRE(cb_full(empty) == 0);
+	REQUIRE(cb_empty(empty) == 1);
 }
 
 TEST_CASE("Circular buffer read all", "[read]")
@@ -194,10 +194,10 @@ TEST_CASE("Circular buffer read all", "[read]")
 
 	incrementing = incrementing_buffer(SIZE);
 
-	REQUIRE(circular_buffer_available_data(incrementing) == incrementing->length);
-	ret = circular_buffer_read(incrementing, buffer, sizeof(buffer));
+	REQUIRE(cb_available_data(incrementing) == incrementing->length);
+	ret = cb_read(incrementing, buffer, sizeof(buffer));
 	REQUIRE(ret == sizeof(buffer));
-	REQUIRE(circular_buffer_available_data(incrementing) == 0);
+	REQUIRE(cb_available_data(incrementing) == 0);
 	for (i = 0; i < sizeof(buffer); i++) {
 		if (buffer[i] != i) {
 			FAIL("Data read from incrementing is incorrect.");
@@ -214,17 +214,17 @@ TEST_CASE("Circular buffer read none", "[read]")
 	int ret;
 
 	incrementing = incrementing_buffer(SIZE);
-	empty = circular_buffer_create(20);
+	empty = cb_create(20);
 
-	REQUIRE(circular_buffer_available_data(incrementing) == incrementing->length);
-	ret = circular_buffer_read(incrementing, buffer, 0);
+	REQUIRE(cb_available_data(incrementing) == incrementing->length);
+	ret = cb_read(incrementing, buffer, 0);
 	REQUIRE(ret == 0);
-	REQUIRE(circular_buffer_available_data(incrementing) == incrementing->length);
+	REQUIRE(cb_available_data(incrementing) == incrementing->length);
 
-	REQUIRE(circular_buffer_available_data(empty) == 0);
-	ret = circular_buffer_read(empty, buffer, 0);
+	REQUIRE(cb_available_data(empty) == 0);
+	ret = cb_read(empty, buffer, 0);
 	REQUIRE(ret == 0);
-	REQUIRE(circular_buffer_available_data(empty) == 0);
+	REQUIRE(cb_available_data(empty) == 0);
 }
 
 TEST_CASE("Circular buffer read too much", "[read]")
@@ -235,22 +235,22 @@ TEST_CASE("Circular buffer read too much", "[read]")
 	int ret;
 
 	incrementing = incrementing_buffer(SIZE);
-	empty = circular_buffer_create(20);
+	empty = cb_create(20);
 
 	/*
 	 * circular_buffer_read should only return up to the amount of available data. This
 	 * means it should return at most the amount specified, but could be less if the amount
 	 * specified was more than was available.
 	 */
-	REQUIRE(circular_buffer_available_data(incrementing) == incrementing->length);
-	ret = circular_buffer_read(incrementing, buffer, sizeof(buffer));
+	REQUIRE(cb_available_data(incrementing) == incrementing->length);
+	ret = cb_read(incrementing, buffer, sizeof(buffer));
 	REQUIRE(ret == SIZE);
-	REQUIRE(circular_buffer_available_data(incrementing) == 0);
+	REQUIRE(cb_available_data(incrementing) == 0);
 
-	REQUIRE(circular_buffer_available_data(empty) == 0);
-	ret = circular_buffer_read(empty, buffer, 1);
+	REQUIRE(cb_available_data(empty) == 0);
+	ret = cb_read(empty, buffer, 1);
 	REQUIRE(ret == 0);
-	REQUIRE(circular_buffer_available_data(empty) == 0);
+	REQUIRE(cb_available_data(empty) == 0);
 }
 
 TEST_CASE("Circular buffer write all", "[write]")
@@ -260,16 +260,16 @@ TEST_CASE("Circular buffer write all", "[write]")
 	struct circular_buffer *empty;
 	int i, ret;
 
-	empty = circular_buffer_create(SIZE);
+	empty = cb_create(SIZE);
 
 	/* populate test data with incrementing numbers */
 	for (i = 0; i < sizeof(data); i++)
 		data[i] = i;
 
-	REQUIRE(circular_buffer_available_data(empty) == 0);
-	ret = circular_buffer_write(empty, data, SIZE);
+	REQUIRE(cb_available_data(empty) == 0);
+	ret = cb_write(empty, data, SIZE);
 	REQUIRE(ret == SIZE);
-	REQUIRE(circular_buffer_available_data(empty) == SIZE);
+	REQUIRE(cb_available_data(empty) == SIZE);
 	for (i = 0; i < empty->length; i++) {
 		if (empty->buffer[i] != i) {
 			FAIL("Data written to empty buffer is incorrect.");
@@ -285,13 +285,13 @@ TEST_CASE("Circular buffer write none", "[write]")
 	int ret;
 	char data[10];
 
-	empty = circular_buffer_create(SIZE);
+	empty = cb_create(SIZE);
 
-	ret = circular_buffer_write(empty, data, 0);
+	ret = cb_write(empty, data, 0);
 
 	REQUIRE(ret == 0);
-	REQUIRE(circular_buffer_available_data(empty) == 0);
-	REQUIRE(circular_buffer_available_space(empty) == SIZE);
+	REQUIRE(cb_available_data(empty) == 0);
+	REQUIRE(cb_available_space(empty) == SIZE);
 }
 
 TEST_CASE("Circular buffer write too much", "[write]")
@@ -301,16 +301,16 @@ TEST_CASE("Circular buffer write too much", "[write]")
 	struct circular_buffer *empty;
 	int i, ret;
 
-	empty = circular_buffer_create(SIZE);
+	empty = cb_create(SIZE);
 
 	/* populate test data with incrementing numbers */
 	for (i = 0; i < sizeof(data); i++)
 		data[i] = i;
 
-	REQUIRE(circular_buffer_available_data(empty) == 0);
-	ret = circular_buffer_write(empty, data, sizeof(data));
+	REQUIRE(cb_available_data(empty) == 0);
+	ret = cb_write(empty, data, sizeof(data));
 	REQUIRE(ret == -1);
-	REQUIRE(circular_buffer_available_data(empty) == 0);
+	REQUIRE(cb_available_data(empty) == 0);
 	for (i = 0; i < empty->length; i++) {
 		if (empty->buffer[i] != 0) {
 			FAIL("The buffer was modified when it shouldn't have been.");
@@ -334,17 +334,17 @@ TEST_CASE("Circular buffer head wraps", "[read][write]")
 	/* Attempt to write to a full buffer and expect nothing to change. */
 	REQUIRE(incrementing->head == incrementing->length);
 	REQUIRE(incrementing->tail == 0);
-	ret = circular_buffer_write(incrementing, data, WRITE_SIZE);
+	ret = cb_write(incrementing, data, WRITE_SIZE);
 	REQUIRE(ret == -1);
 	REQUIRE(incrementing->head == incrementing->length);
 	REQUIRE(incrementing->tail == 0);
 	/* Now read some. */
-	ret = circular_buffer_read(incrementing, data, READ_SIZE);
+	ret = cb_read(incrementing, data, READ_SIZE);
 	REQUIRE(ret == READ_SIZE);
 	REQUIRE(incrementing->head == incrementing->length);
 	REQUIRE(incrementing->tail == READ_SIZE);
 	/* Now write and verify head has wrapped. */
-	ret = circular_buffer_write(incrementing, data, WRITE_SIZE);
+	ret = cb_write(incrementing, data, WRITE_SIZE);
 	REQUIRE(ret == WRITE_SIZE);
 	/* head should be 1 less than WRITE_SIZE since the actual buffer is length + 1. */
 	REQUIRE(incrementing->head == WRITE_SIZE - 1);
@@ -366,23 +366,23 @@ TEST_CASE("Circular buffer tail wraps", "[read][write]")
 	/* Attempt to write to a full buffer and expect nothing to change. */
 	REQUIRE(incrementing->head == incrementing->length);
 	REQUIRE(incrementing->tail == 0);
-	ret = circular_buffer_write(incrementing, data, WRITE_SIZE);
+	ret = cb_write(incrementing, data, WRITE_SIZE);
 	REQUIRE(ret == -1);
 	REQUIRE(incrementing->head == incrementing->length);
 	REQUIRE(incrementing->tail == 0);
 	/* Now read all data. */
-	ret = circular_buffer_read(incrementing, data, incrementing->length);
+	ret = cb_read(incrementing, data, incrementing->length);
 	REQUIRE(ret == incrementing->length);
 	REQUIRE(incrementing->head == incrementing->length);
 	REQUIRE(incrementing->tail == incrementing->length);
 	/* Now fill the buffer up again. */
-	ret = circular_buffer_write(incrementing, data, WRITE_SIZE);
+	ret = cb_write(incrementing, data, WRITE_SIZE);
 	REQUIRE(ret == WRITE_SIZE);
 	/* head should be 1 less than WRITE_SIZE since the actual buffer is length + 1. */
 	REQUIRE(incrementing->head == WRITE_SIZE - 1);
 	REQUIRE(incrementing->tail == incrementing->length);
 	/* Now read and verify tail has wrapped. */
-	ret = circular_buffer_read(incrementing, data, READ_SIZE);
+	ret = cb_read(incrementing, data, READ_SIZE);
 	REQUIRE(ret == READ_SIZE);
 	REQUIRE(incrementing->head == WRITE_SIZE - 1);
 	REQUIRE(incrementing->tail == READ_SIZE - 1);
@@ -394,10 +394,10 @@ TEST_CASE("Circular buffer validate data", "[read][write]")
 	struct circular_buffer *buffer;
 	int i, ret;
 
-	buffer = circular_buffer_create(sizeof(data));
+	buffer = cb_create(sizeof(data));
 
 	/* Write the test data to the buffer and validate it is actually loaded. */
-	ret = circular_buffer_write(buffer, data, sizeof(data));
+	ret = cb_write(buffer, data, sizeof(data));
 	REQUIRE(ret == sizeof(data));
 	for (i = 0; i < sizeof(data); i++) {
 		if (buffer->buffer[i] != data[i]) {
@@ -407,7 +407,7 @@ TEST_CASE("Circular buffer validate data", "[read][write]")
 	}
 
 	/* Read the test data and validate that it was actually copied. */
-	ret = circular_buffer_read(buffer, validate, sizeof(validate));
+	ret = cb_read(buffer, validate, sizeof(validate));
 	REQUIRE(ret == sizeof(validate));
 	for (i = 0; i < sizeof(validate); i++) {
 		if (validate[i] != data[i]) {
@@ -423,10 +423,10 @@ TEST_CASE("Circular buffer wrapping boundary", "[read][write]")
 	struct circular_buffer *buffer;
 	int i, ret;
 
-	buffer = circular_buffer_create(sizeof(data));
+	buffer = cb_create(sizeof(data));
 
 	/* Write the test data to the buffer and validate it is actually loaded. */
-	ret = circular_buffer_write(buffer, data, sizeof(data));
+	ret = cb_write(buffer, data, sizeof(data));
 	REQUIRE(ret == sizeof(data));
 	for (i = 0; i < sizeof(data); i++) {
 		if (buffer->buffer[i] != data[i]) {
@@ -440,12 +440,12 @@ TEST_CASE("Circular buffer wrapping boundary", "[read][write]")
 	 * where tail is located at the very last position before wrapping and
 	 * then read the buffer.
 	 */
-	ret = circular_buffer_read(buffer, validate, 4);
+	ret = cb_read(buffer, validate, 4);
 	REQUIRE(ret == 4);
-	ret = circular_buffer_write(buffer, data2, 2);
+	ret = cb_write(buffer, data2, 2);
 	REQUIRE(ret == 2);
 	/* Verify that a read that wraps has valid data. */
-	ret = circular_buffer_read(buffer, validate, 2);
+	ret = cb_read(buffer, validate, 2);
 	REQUIRE(ret == 2);
 	for (i = 0; i < 2; i++) {
 		if (validate[i] != data2[i]) {
@@ -456,7 +456,7 @@ TEST_CASE("Circular buffer wrapping boundary", "[read][write]")
 }
 
 static volatile int _running = 0;
-static void* circular_buffer_write_thread(void *circular_buffer)
+static void* cb_write_thread(void *circular_buffer)
 {
 	int i = 0, ret;
 	struct circular_buffer *buffer = (struct circular_buffer*) circular_buffer;
@@ -468,7 +468,7 @@ static void* circular_buffer_write_thread(void *circular_buffer)
 		data[2] = (i >> 8) & 0xff;
 		data[3] = i & 0xff;
 retry:
-		ret = circular_buffer_write(buffer, data, 4);
+		ret = cb_write(buffer, data, 4);
 		/*
 		 * In case we stop the thread from outside, we don't want to get
 		 * stuck in an infinite loop. So, check that we are still running.
@@ -487,11 +487,11 @@ TEST_CASE("Circular buffer multithreading", "[read][write][multithread]")
 	const unsigned int VERIFY_NUM = 100000;
 	char data[4];
 
-	buffer = circular_buffer_create(12);
+	buffer = cb_create(12);
 	REQUIRE(buffer != 0);
 
 	_running = 1;
-	ret = pthread_create(&thread, NULL, &circular_buffer_write_thread, buffer);
+	ret = pthread_create(&thread, NULL, &cb_write_thread, buffer);
 	REQUIRE(ret == 0);
 
 	/*
@@ -501,7 +501,7 @@ TEST_CASE("Circular buffer multithreading", "[read][write][multithread]")
 	 */
 	for (i = 0; i < VERIFY_NUM; i++) {
 retry:
-		ret = circular_buffer_read(buffer, data, 4);
+		ret = cb_read(buffer, data, 4);
 		/* In case the write thread hasn't kept up keep trying to read. */
 		if (ret < 1) { goto retry; }
 		value = ((data[0] << 24) & 0xff000000) |
@@ -516,5 +516,5 @@ retry:
 	}
 
 	pthread_cancel(thread);
-	circular_buffer_destroy(buffer);
+	cb_destroy(buffer);
 }
