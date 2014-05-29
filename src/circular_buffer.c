@@ -13,7 +13,7 @@
 #define debug(M, ...)
 #endif
 
-struct circular_buffer *circular_buffer_create(int length)
+struct circular_buffer *cb_create(int length)
 {
 	struct circular_buffer *buffer = calloc(1, sizeof(struct circular_buffer));
 	if (!buffer)
@@ -36,7 +36,7 @@ fail:
 	return NULL;
 }
 
-void circular_buffer_destroy(struct circular_buffer *buffer)
+void cb_destroy(struct circular_buffer *buffer)
 {
 	int ret;
 
@@ -48,7 +48,7 @@ void circular_buffer_destroy(struct circular_buffer *buffer)
 	free(buffer);
 }
 
-int circular_buffer_available_data(struct circular_buffer *buffer)
+int cb_available_data(struct circular_buffer *buffer)
 {
 	int available = 0;
 
@@ -64,14 +64,14 @@ int circular_buffer_available_data(struct circular_buffer *buffer)
 	return available;
 }
 
-int circular_buffer_available_space(struct circular_buffer *buffer)
+int cb_available_space(struct circular_buffer *buffer)
 {
-	int available = buffer->length - circular_buffer_available_data(buffer);
+	int available = buffer->length - cb_available_data(buffer);
 	assert(available >= 0);
 	return available;
 }
 
-int circular_buffer_read(struct circular_buffer *buffer, char *target, int amount)
+int cb_read(struct circular_buffer *buffer, char *target, int amount)
 {
 	int available, ret = 0;
 
@@ -81,7 +81,7 @@ int circular_buffer_read(struct circular_buffer *buffer, char *target, int amoun
 		goto out;
 	}
 
-	available = circular_buffer_available_data(buffer);
+	available = cb_available_data(buffer);
 	amount = amount > available ? available : amount;
 
 	if (amount <= 0) {
@@ -90,15 +90,15 @@ int circular_buffer_read(struct circular_buffer *buffer, char *target, int amoun
 	}
 
 	if (buffer->tail <= buffer->head) {
-		memcpy(target, circular_buffer_starts_at(buffer), amount);
+		memcpy(target, cb_starts_at(buffer), amount);
 	} else {
 		int tail_space = (buffer->length + 1) - buffer->tail;
 		assert(tail_space >= 0);
 		if (tail_space <= amount) {
-			memcpy(target, circular_buffer_starts_at(buffer), tail_space);
+			memcpy(target, cb_starts_at(buffer), tail_space);
 			memcpy(target + tail_space, buffer->buffer, amount - tail_space);
 		} else {
-			memcpy(target, circular_buffer_starts_at(buffer), amount);
+			memcpy(target, cb_starts_at(buffer), amount);
 		}
 	}
 
@@ -110,7 +110,7 @@ out:
 	return amount;
 }
 
-int circular_buffer_write(struct circular_buffer *buffer, char *data, int amount)
+int cb_write(struct circular_buffer *buffer, char *data, int amount)
 {
 	int ret = 0;
 
@@ -120,9 +120,9 @@ int circular_buffer_write(struct circular_buffer *buffer, char *data, int amount
 		goto out;
 	}
 
-	if (amount > circular_buffer_available_space(buffer)) {
+	if (amount > cb_available_space(buffer)) {
 		debug("Not enough space: %d request, %d available",
-			amount, circular_buffer_available_space(buffer));
+			amount, cb_available_space(buffer));
 		amount = -1;
 		goto out;
 	}
@@ -131,13 +131,13 @@ int circular_buffer_write(struct circular_buffer *buffer, char *data, int amount
 		int head_space = (buffer->length + 1) - buffer->head;
 		assert(head_space >= 0);
 		if (head_space >= amount) {
-			memcpy(circular_buffer_ends_at(buffer), data, amount);
+			memcpy(cb_ends_at(buffer), data, amount);
 		} else {
-			memcpy(circular_buffer_ends_at(buffer), data, head_space);
+			memcpy(cb_ends_at(buffer), data, head_space);
 			memcpy(buffer->buffer, data + head_space, amount - head_space);
 		}
 	} else {
-		memcpy(circular_buffer_ends_at(buffer), data, amount);
+		memcpy(cb_ends_at(buffer), data, amount);
 	}
 
 	buffer->head = (buffer->head + amount) % (buffer->length + 1);
@@ -148,12 +148,12 @@ out:
 	return amount;
 }
 
-void circular_buffer_debug(struct circular_buffer *buf)
+void cb_debug(struct circular_buffer *buf)
 {
 	int i;
 	printf("{ length='%d' tail='%d' head='%d' available_data='%d' available_space='%d' buffer='",
-		buf->length, buf->tail, buf->head, circular_buffer_available_data(buf),
-		circular_buffer_available_space(buf));
+		buf->length, buf->tail, buf->head, cb_available_data(buf),
+		cb_available_space(buf));
 	for (i = 0; i < buf->length + 1; i++) {
 		if (i != 0)
 			printf(" ");
@@ -166,7 +166,7 @@ void circular_buffer_debug(struct circular_buffer *buf)
 	printf("' }\n");
 }
 
-void circular_buffer_clear(struct circular_buffer *buf)
+void cb_clear(struct circular_buffer *buf)
 {
 	buf->tail = 0;
 	buf->head = 0;
