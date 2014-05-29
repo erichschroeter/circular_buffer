@@ -110,6 +110,17 @@ out:
 	return amount;
 }
 
+int cb_read_single(struct circular_buffer *buffer, char *target)
+{
+	int ret;
+	char tmp[1];
+
+	ret = cb_read(buffer, tmp, 1);
+	*target = tmp[0];
+
+	return ret;
+}
+
 int cb_write(struct circular_buffer *buffer, char *data, int amount)
 {
 	int ret = 0;

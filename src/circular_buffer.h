@@ -18,6 +18,7 @@ struct circular_buffer {
 struct circular_buffer *cb_create(int length);
 void cb_destroy(struct circular_buffer *buffer);
 int cb_read(struct circular_buffer *buffer, char *target, int amount);
+int cb_read_single(struct circular_buffer *buffer, char *target);
 int cb_write(struct circular_buffer *buffer, char *data, int length);
 int cb_empty(struct circular_buffer *buffer);
 int cb_full(struct circular_buffer *buffer);
