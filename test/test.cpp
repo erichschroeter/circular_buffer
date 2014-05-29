@@ -185,6 +185,24 @@ TEST_CASE("Circular buffer clear function", "[utility]")
 	REQUIRE(cb_empty(empty) == 1);
 }
 
+TEST_CASE("Circular buffer read single", "[read]")
+{
+	const unsigned int SIZE = 10;
+	char data;
+	struct circular_buffer *incrementing;
+	int i, ret;
+
+	incrementing = incrementing_buffer(SIZE);
+
+	REQUIRE(cb_available_data(incrementing) == incrementing->length);
+	ret = cb_read_single(incrementing, &data);
+	REQUIRE(ret == 1);
+	REQUIRE(cb_available_space(incrementing) == 1);
+	REQUIRE(data == 0);
+	ret = cb_read_single(incrementing, &data);
+	REQUIRE(data == 1);
+}
+
 TEST_CASE("Circular buffer read all", "[read]")
 {
 	const unsigned int SIZE = 10;
