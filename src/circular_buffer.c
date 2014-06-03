@@ -29,8 +29,11 @@ CBAPI struct circular_buffer * CBCALL cb_create(int length)
 	buffer->buffer = calloc(buffer->length + 1, sizeof(char));
 	if (!buffer->buffer) goto fail;
 
+#ifdef WIN32
+#else
 	int ret = sem_init(&buffer->mutex, 0, 1);
 	if (ret != 0) goto fail_mutex;
+#endif
 
 	return buffer;
 fail_mutex:
@@ -45,9 +48,12 @@ CBAPI void CBCALL cb_destroy(struct circular_buffer *buffer)
 	int ret;
 
 	/* Make sure no other threads are using the buffer before destroying it. */
+#ifdef WIN32
+#else
 	ret = sem_wait(&buffer->mutex);
 	if (ret)
 		return;
+#endif
 	free(buffer->buffer);
 	free(buffer);
 }
@@ -79,11 +85,14 @@ CBAPI int CBCALL cb_read(struct circular_buffer *buffer, char *target, int amoun
 {
 	int available, ret = 0;
 
+#ifdef WIN32
+#else
 	ret = sem_wait(&buffer->mutex);
 	if (ret) {
 		amount = 0;
 		goto out;
 	}
+#endif
 
 	available = cb_available_data(buffer);
 	amount = amount > available ? available : amount;
@@ -109,7 +118,10 @@ CBAPI int CBCALL cb_read(struct circular_buffer *buffer, char *target, int amoun
 	buffer->tail = (buffer->tail + amount) % (buffer->length + 1);
 
 out:
+#ifdef WIN32
+#else
 	sem_post(&buffer->mutex);
+#endif
 
 	return amount;
 }
@@ -129,11 +141,14 @@ CBAPI int CBCALL cb_write(struct circular_buffer *buffer, char *data, int amount
 {
 	int ret = 0;
 
+#ifdef WIN32
+#else
 	ret = sem_wait(&buffer->mutex);
 	if (ret) {
 		amount = 0;
 		goto out;
 	}
+#endif
 
 	if (amount > cb_available_space(buffer)) {
 		debug("Not enough space: %d request, %d available",
@@ -158,7 +173,10 @@ CBAPI int CBCALL cb_write(struct circular_buffer *buffer, char *data, int amount
 	buffer->head = (buffer->head + amount) % (buffer->length + 1);
 
 out:
+#ifdef WIN32
+#else
 	sem_post(&buffer->mutex);
+#endif
 
 	return amount;
 }

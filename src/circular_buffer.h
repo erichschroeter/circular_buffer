@@ -30,7 +30,10 @@ struct circular_buffer {
 	int length;
 	int tail;
 	int head;
+#ifdef WIN32
+#else
 	sem_t mutex;
+#endif
 };
 
 CBAPI struct circular_buffer * CBCALL cb_create(int length);
