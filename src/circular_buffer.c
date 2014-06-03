@@ -2,8 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
 #include <assert.h>
+
+#ifdef WIN32
+#else
+#include <unistd.h>
+#endif
 
 #include "circular_buffer.h"
 
@@ -13,7 +17,7 @@
 #define debug(M, ...)
 #endif
 
-struct circular_buffer *cb_create(int length)
+CBAPI struct circular_buffer * CBCALL cb_create(int length)
 {
 	struct circular_buffer *buffer = calloc(1, sizeof(struct circular_buffer));
 	if (!buffer)
@@ -36,7 +40,7 @@ fail:
 	return NULL;
 }
 
-void cb_destroy(struct circular_buffer *buffer)
+CBAPI void CBCALL cb_destroy(struct circular_buffer *buffer)
 {
 	int ret;
 
@@ -48,7 +52,7 @@ void cb_destroy(struct circular_buffer *buffer)
 	free(buffer);
 }
 
-int cb_available_data(struct circular_buffer *buffer)
+CBAPI int CBCALL cb_available_data(struct circular_buffer *buffer)
 {
 	int available = 0;
 
@@ -64,14 +68,14 @@ int cb_available_data(struct circular_buffer *buffer)
 	return available;
 }
 
-int cb_available_space(struct circular_buffer *buffer)
+CBAPI int CBCALL cb_available_space(struct circular_buffer *buffer)
 {
 	int available = buffer->length - cb_available_data(buffer);
 	assert(available >= 0);
 	return available;
 }
 
-int cb_read(struct circular_buffer *buffer, char *target, int amount)
+CBAPI int CBCALL cb_read(struct circular_buffer *buffer, char *target, int amount)
 {
 	int available, ret = 0;
 
@@ -110,7 +114,7 @@ out:
 	return amount;
 }
 
-int cb_read_single(struct circular_buffer *buffer, char *target)
+CBAPI int CBCALL cb_read_single(struct circular_buffer *buffer, char *target)
 {
 	int ret;
 	char tmp[1];
@@ -121,7 +125,7 @@ int cb_read_single(struct circular_buffer *buffer, char *target)
 	return ret;
 }
 
-int cb_write(struct circular_buffer *buffer, char *data, int amount)
+CBAPI int CBCALL cb_write(struct circular_buffer *buffer, char *data, int amount)
 {
 	int ret = 0;
 
@@ -159,7 +163,7 @@ out:
 	return amount;
 }
 
-void cb_debug(struct circular_buffer *buf)
+CBAPI void CBCALL cb_debug(struct circular_buffer *buf)
 {
 	int i;
 	printf("{ length='%d' tail='%d' head='%d' available_data='%d' available_space='%d' buffer='",
@@ -177,7 +181,7 @@ void cb_debug(struct circular_buffer *buf)
 	printf("' }\n");
 }
 
-void cb_clear(struct circular_buffer *buf)
+CBAPI void CBCALL cb_clear(struct circular_buffer *buf)
 {
 	buf->tail = 0;
 	buf->head = 0;
