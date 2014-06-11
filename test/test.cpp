@@ -564,3 +564,40 @@ retry:
 	pthread_cancel(thread);
 	cb_destroy(buffer);
 }
+
+TEST_CASE("Random buffer size and rounds", "[read][write][random]")
+{
+#define MAX_BUFFER 4096 /* Keep it reasonable, otherwise this test takes a long time. */
+#define MAX_ROUNDS 100
+	struct circular_buffer *buffer;
+	int i, ret, rounds;
+
+	srand(get_seed());
+	/* Random number of bytes read from buffer. */
+	rounds = rand() % MAX_ROUNDS;
+
+	buffer = random_buffer(MAX_BUFFER);
+
+	INFO("Testing buffer size (" << buffer->length << " for " << rounds << " rounds.");
+	i = 0;
+	while (rounds > 0) {
+		char write[] = { i }, read[1];
+
+		/* Write the int value to the buffer. This is garbage data. */
+		ret = cb_write(buffer, write, 1);
+		REQUIRE(ret == 1);
+
+		/* Verify what was read is what was written. */
+		ret = cb_read(buffer, read, 1);
+		REQUIRE(read[0] == write[0]);
+
+		if (i >= buffer->length) {
+			rounds--;
+			i = 0;
+		}
+		i++;
+	}
+
+	/* There should be no remaining data. */
+	REQUIRE(cb_available_data(buffer) == 0);
+}
