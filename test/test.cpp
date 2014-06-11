@@ -10,6 +10,34 @@
 #define strcat strcat_s
 #endif
 
+static int get_seed()
+{
+	/* If user set CB_SEED env var, use it. Otherwise use default. */
+	char *env = getenv("CB_SEED");
+	if (env == NULL) {
+		WARN("CB_SEED environment variable not set. Set via 'export CB_SEED=$RANDOM'.");
+		return 1;
+	} else {
+		return atoi(env);
+	}
+}
+
+static struct circular_buffer* random_buffer(int max)
+{
+	struct circular_buffer *buffer;
+	int bufferSize;
+
+	srand(get_seed());
+
+	/* Random buffer size. */
+	bufferSize = rand() % max;
+
+	buffer = cb_create(bufferSize);
+	REQUIRE(buffer != 0);
+
+	return buffer;
+}
+
 static struct circular_buffer* incrementing_buffer(int size)
 {
 	int i;
