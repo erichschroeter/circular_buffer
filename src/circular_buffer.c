@@ -220,7 +220,7 @@ CBAPI void CBCALL cb_debug(struct circular_buffer *buf)
 	int i;
 	lock(buf);
 	printf("{ length='%d' tail='%d' head='%d' available_data='%d' available_space='%d' buffer='",
-		buf->length, buf->tail, buf->head, cb_available_data(buf),
+		buf->length, buf->tail, buf->head, _available_data(buf),
 		_available_space(buf));
 	for (i = 0; i < buf->length + 1; i++) {
 		if (i != 0)
