@@ -17,6 +17,24 @@
 #define debug(M, ...)
 #endif
 
+static void lock(struct circular_buffer *buffer)
+{
+#ifdef WIN32
+	/* TODO support Windows mutex equivalent */
+#else
+	pthread_mutex_lock(&buffer->mutex);
+#endif
+}
+
+static void unlock(struct circular_buffer *buffer)
+{
+#ifdef WIN32
+	/* TODO support Windows mutex equivalent */
+#else
+	pthread_mutex_unlock(&buffer->mutex);
+#endif
+}
+
 CBAPI struct circular_buffer * CBCALL cb_create(int length)
 {
 	struct circular_buffer *buffer = calloc(1, sizeof(struct circular_buffer));
@@ -30,9 +48,9 @@ CBAPI struct circular_buffer * CBCALL cb_create(int length)
 	if (!buffer->buffer) goto fail;
 
 #ifdef WIN32
+	/* TODO support Windows mutex equivalent */
 #else
-	int ret = sem_init(&buffer->mutex, 0, 1);
-	if (ret != 0) goto fail_mutex;
+	pthread_mutex_init(&buffer->mutex, NULL);
 #endif
 
 	return buffer;
@@ -45,20 +63,17 @@ fail:
 
 CBAPI void CBCALL cb_destroy(struct circular_buffer *buffer)
 {
-	int ret;
-
 	/* Make sure no other threads are using the buffer before destroying it. */
 #ifdef WIN32
+	/* TODO support Windows mutex equivalent */
 #else
-	ret = sem_wait(&buffer->mutex);
-	if (ret)
-		return;
+	pthread_mutex_destroy(&buffer->mutex);
 #endif
 	free(buffer->buffer);
 	free(buffer);
 }
 
-CBAPI int CBCALL cb_available_data(struct circular_buffer *buffer)
+static int _available_data(struct circular_buffer *buffer)
 {
 	int available = 0;
 
@@ -69,6 +84,24 @@ CBAPI int CBCALL cb_available_data(struct circular_buffer *buffer)
 	else
 		available = (buffer->length + 1) - buffer->tail + buffer->head;
 
+	return available;
+}
+
+static int _available_space(struct circular_buffer *buffer)
+{
+	return buffer->length - _available_data(buffer);
+}
+
+CBAPI int CBCALL cb_available_data(struct circular_buffer *buffer)
+{
+	int available = 0;
+
+	lock(buffer);
+
+	available = _available_data(buffer);
+
+	unlock(buffer);
+
 	assert(available >= 0);
 
 	return available;
@@ -76,30 +109,44 @@ CBAPI int CBCALL cb_available_data(struct circular_buffer *buffer)
 
 CBAPI int CBCALL cb_available_space(struct circular_buffer *buffer)
 {
-	int available = buffer->length - cb_available_data(buffer);
+	int available = 0;
+
+	lock(buffer);
+
+	available = _available_space(buffer);
+
+	unlock(buffer);
+
 	assert(available >= 0);
+
 	return available;
 }
 
+/**
+ * Attempts to read up to `amount` bytes from `buffer` into the buffer
+ * starting at `target`.
+ *
+ * If `amount` is zero or less, zero is returned.
+ *
+ * @param buffer the buffer to read from
+ * @param target location to copy data to
+ * @param amount the number of bytes to attempt to copy
+ *
+ * @return A maximum of `amount` of bytes read into `target`.
+ */
 CBAPI int CBCALL cb_read(struct circular_buffer *buffer, char *target, int amount)
 {
 	int available, ret = 0;
 
-#ifdef WIN32
-#else
-	ret = sem_wait(&buffer->mutex);
-	if (ret) {
-		amount = 0;
-		goto out;
-	}
-#endif
+	if (amount < 1)
+		return 0;
 
-	available = cb_available_data(buffer);
-	amount = amount > available ? available : amount;
+	lock(buffer);
 
-	if (amount <= 0) {
-		amount = 0;
-		goto out;
+	available = _available_data(buffer);
+
+	if (amount > available) {
+		amount = available;
 	}
 
 	if (buffer->tail <= buffer->head) {
@@ -118,10 +165,7 @@ CBAPI int CBCALL cb_read(struct circular_buffer *buffer, char *target, int amoun
 	buffer->tail = (buffer->tail + amount) % (buffer->length + 1);
 
 out:
-#ifdef WIN32
-#else
-	sem_post(&buffer->mutex);
-#endif
+	unlock(buffer);
 
 	return amount;
 }
@@ -141,18 +185,11 @@ CBAPI int CBCALL cb_write(struct circular_buffer *buffer, char *data, int amount
 {
 	int ret = 0;
 
-#ifdef WIN32
-#else
-	ret = sem_wait(&buffer->mutex);
-	if (ret) {
-		amount = 0;
-		goto out;
-	}
-#endif
+	lock(buffer);
 
-	if (amount > cb_available_space(buffer)) {
+	if (amount > _available_space(buffer)) {
 		debug("Not enough space: %d request, %d available",
-			amount, cb_available_space(buffer));
+			amount, _available_space(buffer));
 		amount = -1;
 		goto out;
 	}
@@ -173,10 +210,7 @@ CBAPI int CBCALL cb_write(struct circular_buffer *buffer, char *data, int amount
 	buffer->head = (buffer->head + amount) % (buffer->length + 1);
 
 out:
-#ifdef WIN32
-#else
-	sem_post(&buffer->mutex);
-#endif
+	unlock(buffer);
 
 	return amount;
 }
@@ -184,9 +218,10 @@ out:
 CBAPI void CBCALL cb_debug(struct circular_buffer *buf)
 {
 	int i;
+	lock(buf);
 	printf("{ length='%d' tail='%d' head='%d' available_data='%d' available_space='%d' buffer='",
 		buf->length, buf->tail, buf->head, cb_available_data(buf),
-		cb_available_space(buf));
+		_available_space(buf));
 	for (i = 0; i < buf->length + 1; i++) {
 		if (i != 0)
 			printf(" ");
@@ -196,6 +231,7 @@ CBAPI void CBCALL cb_debug(struct circular_buffer *buf)
 			printf("head->");
 		printf("%x", buf->buffer[i] & 0xff);
 	}
+	unlock(buf);
 	printf("' }\n");
 }
 

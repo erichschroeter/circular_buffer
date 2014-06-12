@@ -21,7 +21,7 @@ extern "C" {
 
 #else /* UNIX */
 
-#include <semaphore.h>
+#include <pthread.h>
 
 #endif
 
@@ -32,7 +32,7 @@ struct circular_buffer {
 	int head;
 #ifdef WIN32
 #else
-	sem_t mutex;
+	pthread_mutex_t mutex;
 #endif
 };
 
