@@ -166,6 +166,8 @@ CBAPI int CBCALL cb_read(struct circular_buffer *buffer, char *target, int amoun
 	}
 
 	buffer->tail = (buffer->tail + amount) % (buffer->length + 1);
+	assert(buffer->tail <= (buffer->length + 1));
+	assert(buffer->tail >= 0);
 
 out:
 	unlock(buffer);
@@ -211,6 +213,8 @@ CBAPI int CBCALL cb_write(struct circular_buffer *buffer, char *data, int amount
 	}
 
 	buffer->head = (buffer->head + amount) % (buffer->length + 1);
+	assert(buffer->head <= (buffer->length + 1));
+	assert(buffer->head >= 0);
 
 out:
 	unlock(buffer);
