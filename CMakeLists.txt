@@ -10,7 +10,7 @@ project(cb)
 set(PROJECT_DESCRIPTION "A circular buffer drop-in utility.")
 
 set(VERSION_MAJOR 1)
-set(VERSION_MINOR 0)
+set(VERSION_MINOR 1)
 set(VERSION_PATCH 0)
 
 # configure a header file to pass CMake settings to source code
