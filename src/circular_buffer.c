@@ -243,6 +243,8 @@ CBAPI void CBCALL cb_debug(struct circular_buffer *buf)
 
 CBAPI void CBCALL cb_clear(struct circular_buffer *buf)
 {
+	lock(buf);
 	buf->tail = 0;
 	buf->head = 0;
+	unlock(buf);
 }
