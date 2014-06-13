@@ -20,8 +20,8 @@
 static void lock(struct circular_buffer *buffer)
 {
 #ifdef WIN32
-	/* TODO support Windows mutex equivalent */
-#else
+	WaitForSingleObject(buffer->mutex, INFINITE);
+#else /* Unix */
 	pthread_mutex_lock(&buffer->mutex);
 #endif
 }
@@ -29,8 +29,8 @@ static void lock(struct circular_buffer *buffer)
 static void unlock(struct circular_buffer *buffer)
 {
 #ifdef WIN32
-	/* TODO support Windows mutex equivalent */
-#else
+	ReleaseMutex(buffer->mutex);
+#else /* Unix */
 	pthread_mutex_unlock(&buffer->mutex);
 #endif
 }
@@ -48,7 +48,10 @@ CBAPI struct circular_buffer * CBCALL cb_create(int length)
 	if (!buffer->buffer) goto fail;
 
 #ifdef WIN32
-	/* TODO support Windows mutex equivalent */
+	buffer->mutex = CreateMutex(
+		NULL,   /* default security attributes */
+		FALSE,  /* initially not owned */
+		NULL);  /* unnamed mutex */
 #else /* Unix */
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
@@ -68,7 +71,7 @@ CBAPI void CBCALL cb_destroy(struct circular_buffer *buffer)
 {
 	/* Make sure no other threads are using the buffer before destroying it. */
 #ifdef WIN32
-	/* TODO support Windows mutex equivalent */
+	CloseHandle(buffer->mutex);
 #else
 	pthread_mutex_destroy(&buffer->mutex);
 #endif

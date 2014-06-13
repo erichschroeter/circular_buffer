@@ -18,11 +18,9 @@ extern "C" {
 #endif
 
 #ifdef WIN32
-
+#include <windows.h>
 #else /* UNIX */
-
 #include <pthread.h>
-
 #endif
 
 struct circular_buffer {
@@ -31,6 +29,7 @@ struct circular_buffer {
 	int tail;
 	int head;
 #ifdef WIN32
+	HANDLE mutex;
 #else
 	pthread_mutex_t mutex;
 #endif
