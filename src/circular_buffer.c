@@ -182,13 +182,18 @@ CBAPI int CBCALL cb_read_single(struct circular_buffer *buffer, char *target)
 
 CBAPI int CBCALL cb_write(struct circular_buffer *buffer, char *data, int amount)
 {
-	int ret = 0;
+	int available, ret = 0;
+
+	if (amount < 1)
+		return 0;
 
 	lock(buffer);
 
-	if (amount > _available_space(buffer)) {
+	available = _available_space(buffer);
+
+	if (amount > available) {
 		debug("Not enough space: %d request, %d available",
-			amount, _available_space(buffer));
+			amount, available);
 		amount = -1;
 		goto out;
 	}
