@@ -177,13 +177,7 @@ out:
 
 CBAPI int CBCALL cb_read_single(struct circular_buffer *buffer, char *target)
 {
-	int ret;
-	char tmp[1];
-
-	ret = cb_read(buffer, tmp, 1);
-	*target = tmp[0];
-
-	return ret;
+	return cb_read(buffer, target, 1);
 }
 
 CBAPI int CBCALL cb_write(struct circular_buffer *buffer, char *data, int amount)
