@@ -49,8 +49,11 @@ CBAPI struct circular_buffer * CBCALL cb_create(int length)
 
 #ifdef WIN32
 	/* TODO support Windows mutex equivalent */
-#else
-	pthread_mutex_init(&buffer->mutex, NULL);
+#else /* Unix */
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ADAPTIVE_NP);
+	pthread_mutex_init(&buffer->mutex, &attr);
 #endif
 
 	return buffer;
